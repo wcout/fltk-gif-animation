@@ -32,9 +32,8 @@ bool openFile(const char *name_, bool debug_, bool close_ = false,
   if (close_)
     win->callback(quit_cb);
   printf("\nLoading '%s'%s\n", name_, uncache_ ? " (uncached)" : "");
-  Fl_Box *b = new Fl_Box(0, 0, 0, 0);
+  Fl_Box *b = new Fl_Box(0, 0, 0, 0); // canvas for animation
   Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, b, false, debug_);
-  b->image(animgif);
   animgif->uncache(uncache_);
   win->end();
   if (animgif->frames()) {
