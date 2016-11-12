@@ -531,9 +531,9 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_, Fl_Widget *canvas_ , boo
       h(canvas_h());
     }
   }
-    canvas()->image(this);
   if (canvas()) {
     canvas()->size(w(), h());
+    canvas()->image(this);
   }
   if (start_)
     start();
