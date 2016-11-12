@@ -37,6 +37,7 @@ class FL_EXPORT Fl_GIF_Image : public Fl_Pixmap {
 
   protected:
 
+  bool load(const char* filename, bool anim = false);
   void close_gif_file();
   void *read_next_image();
   void *gif_handle;

@@ -164,12 +164,17 @@ typedef unsigned char uchar;
  */
 Fl_GIF_Image::Fl_GIF_Image(const char *infname, bool anim/*=false*/) : Fl_Pixmap((char *const*)0),
   gif_handle(0) {
+  load(infname, anim);
+}
+
+bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
+  close_gif_file();
   GifFileType *gifFileIn;
   int errorCode;
   if ((gifFileIn = DGifOpenFileName(infname, &errorCode)) == NULL) {
     Fl::error("Fl_GIF_Image: Unable to open %s!", infname);
     ld(ERR_FILE_ACCESS);
-    return;
+    return false;
   }
   // read first image
   SavedImage *image = DGifSlurpImage(gifFileIn);
@@ -177,7 +182,7 @@ Fl_GIF_Image::Fl_GIF_Image(const char *infname, bool anim/*=false*/) : Fl_Pixmap
     Fl::error("Fl_GIF_Image %s: %s\n", infname, GifErrorString(errorCode));
     DGifCloseFile(gifFileIn, &errorCode);
     ld(ERR_FORMAT);
-    return;
+    return false;
   }
   int Width = gifFileIn->SWidth;
   int Height = gifFileIn->SHeight;
@@ -309,6 +314,7 @@ Fl_GIF_Image::Fl_GIF_Image(const char *infname, bool anim/*=false*/) : Fl_Pixmap
     gif_handle = gifFileIn;
   } else
     DGifCloseFile(gifFileIn, &errorCode);
+  return true;
 }
 
 /*virtual*/
@@ -621,6 +627,10 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   // open gif file for readin
   int errorCode(0);
   GifFileType *gifFileIn = (GifFileType *)gif_handle;
+  if (!gifFileIn) {
+    Inherited::load(name_);
+    gifFileIn = (GifFileType *)gif_handle;
+  }
   if (gifFileIn == NULL) {
     fprintf(stderr, "open '%s': %s\n", name_, GifErrorString(errorCode));
     return false;
