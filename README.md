@@ -42,8 +42,9 @@ The files there can be copied directly into the FLTK tree to replace the current
 
 ## Current status
 
-The current status is promising - it works well, but needs some more tuning.
-I will try to improve some aspects, but it may take some time.
+The current status is promising - it works well, but needs some more tests.
+I will stay with Solution 2 for now and try to improve a few aspects, but
+it may take some time.
 
 ## Test
 
