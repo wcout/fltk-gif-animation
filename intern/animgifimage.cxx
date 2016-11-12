@@ -6,6 +6,7 @@
 
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_File_Chooser.H>
+#include <FL/Fl_Shared_Image.H>
 
 //#define BACKGROUND FL_RED	// use this to see transparent parts better
 #define BACKGROUND FL_GRAY
@@ -141,6 +142,7 @@ static int events(int event_) {
 static const char testsuite[] = "testsuite";
 
 int main(int argc_, char *argv_[]) {
+  fl_register_images();
   Fl::add_handler(events);
   if (argc_ > 1) {
     if (strstr(argv_[1], "-h")) {

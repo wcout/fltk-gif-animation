@@ -2,6 +2,7 @@
 
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_File_Chooser.H>
+#include <FL/Fl_Shared_Image.H>
 
 //#define BACKGROUND FL_RED	// use this to see transparent parts better
 #define BACKGROUND FL_GRAY
@@ -71,6 +72,7 @@ bool openTestSuite(const char *dir_) {
 }
 
 int main(int argc_, char *argv_[]) {
+  fl_register_images();
   if (argc_ > 1) {
     if (!strcmp(argv_[1], "-t"))
       openTestSuite("testsuite");
