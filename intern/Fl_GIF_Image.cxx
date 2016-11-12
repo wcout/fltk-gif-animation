@@ -429,13 +429,13 @@ struct GifFrame {
     dispose(0),
     transparent(false),
     transparent_color_index(-1) {}
-  RGB_Image *rgb;			// full frame image
-  int x, y, w, h;			// frame original dimensions
-  double delay;				// delay (already converted to ms)
-  int dispose;				// disposal method
-  bool transparent;       // background color is transparent color
-  int transparent_color_index;
-  RGB_Image::RGBA_Color transparent_color;
+  RGB_Image *rgb;                          // full frame image
+  int x, y, w, h;                          // frame original dimensions
+  double delay;                            // delay (already converted to ms)
+  int dispose;                             // disposal method
+  bool transparent;                        // background color is transparent color
+  int transparent_color_index;             // needed for dispose()
+  RGB_Image::RGBA_Color transparent_color; // needed for dispose()
 };
 
 struct FrameInfo {
@@ -446,15 +446,15 @@ struct FrameInfo {
     canvas_w(0),
     canvas_h(0),
     debug(false) {}
-  bool push_back_frame(GifFrame *frame_);
-  int frames_size;
-  GifFrame *frames;
-  int background_color_index;
-  RGB_Image::RGBA_Color background_color;
-  GifFrame frame;
-  int canvas_w;
-  int canvas_h;
-  bool debug;
+  bool push_back_frame(GifFrame *frame_);  // add a frame to the "vector"
+  int frames_size;                         // number of frames stored in 'frames'
+  GifFrame *frames;                        // "vector" for frames
+  int background_color_index;              // needed for dispose()
+  RGB_Image::RGBA_Color background_color;  // needed for dispose()
+  GifFrame frame;                          // current processed frame
+  int canvas_w;                            // width of GIF from header
+  int canvas_h;                            // height of GIF from header
+  bool debug;                              // Flag for debug outputs
 };
 
 #include <FL/Fl.H>			// for Fl::add_timeout()
@@ -464,7 +464,7 @@ struct FrameInfo {
 //#define DEBUG(x)
 
 static double convertDelay(int d_) {
-  if (d_ < 1)
+  if (d_ <= 0)
     d_ = 10;
   return (double)d_ / 100;
 }
@@ -478,7 +478,7 @@ static void setToBackGround(RGB_Image &img_, FrameInfo *_fi) {
   if (tp >= 0)
     color = _fi->frames_size ?_fi->frames[ _fi->frames_size - 1].transparent_color :
             _fi->frame.transparent_color;
-  if (tp >= 0 && bg >= 0)	// TrueColor/bier/...
+  if (tp >= 0 && bg >= 0)
     bg = tp;
   color.alpha = tp == bg ? RGB_Image::T_FULL : RGB_Image::T_NONE;
   DEBUG(("  setToColor %d/%d/%d alpha=%d\n", color.r, color.g, color.b, color.alpha));
@@ -539,7 +539,7 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_, Fl_Widget *canvas_ , boo
   }
   if (canvas()) {
     canvas()->size(w(), h());
-    canvas()->image(this);
+    canvas()->image(this); // set animation as image() of canvas
   }
   if (start_)
     start();
