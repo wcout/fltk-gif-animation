@@ -1,3 +1,7 @@
+/*
+    craftet from GIFLIB Git on git://git.code.sf.net/p/giflib/code
+    rev: 9c4ed6e864afa5a6c31e57d0ad9960d740ae17c8 Fri Aug 19 11:48:02 2016 +0800
+*/
 #ifndef fl_gif_private_H
 #define fl_gif_private_H
 
