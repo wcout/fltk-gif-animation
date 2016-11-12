@@ -11,6 +11,8 @@
 #define BACKGROUND FL_GRAY
 //#define BACKGROUND FL_BLACK
 
+static bool GtestForcedRedraw = false;
+
 static void quit_cb(Fl_Widget* w_, void*) {
   exit(0);
 }
@@ -25,19 +27,43 @@ static void set_title(Fl_Window *win_, Fl_Anim_GIF_Image *animgif_) {
   win_->copy_tooltip(strdup(buf));
 }
 
+static void cb_forced_redraw(void *d_) {
+  Fl_Window *win = Fl::first_window();
+  while (win) {
+    win->redraw();
+    win = Fl::next_window(win);
+  }
+  if (Fl::first_window())
+    Fl::add_timeout(0.02, cb_forced_redraw);
+  else
+    Fl::remove_timeout(cb_forced_redraw);
+}
+
 bool openFile(const char *name_, bool debug_, bool close_ = false,
               bool uncache_ = false) {
+  Fl::remove_timeout(cb_forced_redraw);
   Fl_Double_Window *win = new Fl_Double_Window(100, 100);
   win->color(BACKGROUND);
   if (close_)
     win->callback(quit_cb);
   printf("\nLoading '%s'%s\n", name_, uncache_ ? " (uncached)" : "");
-  Fl_Box *b = new Fl_Box(0, 0, 0, 0); // canvas for animation
-  Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, b, false, debug_);
+  Fl_Box *canvas = new Fl_Box(0, 0, 0, 0); // canvas for animation
+  Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, false, debug_);
   animgif->uncache(uncache_);
+  int W = animgif->w();
+  if (GtestForcedRedraw) {
+    // demonstrate a way how to use same animation in another canvas simultaneously:
+    // as the current implementation allows only automatic redraw of one canvas..
+    if (W < 400) {
+      Fl::add_timeout(0.02, cb_forced_redraw); // must force periodic redraw
+      canvas = new Fl_Box(W, 0, animgif->w(), animgif->h()); // the other canvas for animation
+      canvas->image(animgif); // set to same animation!
+      W *= 2;
+    }
+  }
   win->end();
   if (animgif->frames()) {
-    win->size(animgif->w(), animgif->h());
+    win->size(W, animgif->h());
     set_title(win, animgif);
     win->show();
     win->wait_for_expose();
@@ -102,6 +128,7 @@ static void change_speed(bool up_) {
 }
 
 static int events(int event_) {
+  Fl::first_window()->redraw();
   if (event_ == FL_SHORTCUT) {
     if (Fl::event_key() == '+')
       change_speed(true);
@@ -135,9 +162,12 @@ int main(int argc_, char *argv_[]) {
       openDirectory(dir, uncache);
     } else {
       bool debug = false;
-      for (int i = 1; i < argc_; i++)
+      for (int i = 1; i < argc_; i++) {
         if (!strcmp(argv_[i], "-d"))
           debug = true;
+        if (!strcmp(argv_[i], "-f"))
+          GtestForcedRedraw = true;
+      }
       for (int i = 1; i < argc_; i++)
         if (argv_[i][0] != '-')
           openFile(argv_[i], debug, debug);
