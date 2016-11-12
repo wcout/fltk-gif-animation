@@ -351,6 +351,7 @@ void *Fl_GIF_Image::read_next_image() {
 //  Internal helper classes/structs
 //
 
+namespace {
 class RGB_Image : public Fl_RGB_Image {
   typedef Fl_RGB_Image Inherited;
 public:
@@ -416,7 +417,7 @@ void RGB_Image::setToColor(int x_, int y_, int w_, int h_,
 void RGB_Image::setToColor(const RGBA_Color c_, bool alpha_/* = false*/) const {
   setToColor(0, 0, w(), h(), c_, alpha_);
 }
-
+}
 
 struct GifFrame {
   GifFrame() :
@@ -446,7 +447,6 @@ struct FrameInfo {
     canvas_w(0),
     canvas_h(0),
     debug(false) {}
-  bool push_back_frame(GifFrame *frame_);  // add a frame to the "vector"
   int frames_size;                         // number of frames stored in 'frames'
   GifFrame *frames;                        // "vector" for frames
   int background_color_index;              // needed for dispose()
@@ -569,13 +569,14 @@ void Fl_Anim_GIF_Image::clear_frames() {
   _fi->frames_size = 0;
 }
 
-bool FrameInfo::push_back_frame(GifFrame *frame_) {
-  void *tmp = realloc(frames, sizeof(GifFrame) * (frames_size + 1));
+// add a frame to the "vector" in FrameInfo
+static bool push_back_frame(FrameInfo *fi_, GifFrame *frame_) {
+  void *tmp = realloc(fi_->frames, sizeof(GifFrame) * (fi_->frames_size + 1));
   if (!tmp)
     return false;
-  frames = (GifFrame *)tmp;
-  memcpy(&frames[ frames_size ], frame_, sizeof(GifFrame));
-  frames_size++;
+  fi_->frames = (GifFrame *)tmp;
+  memcpy(&fi_->frames[ fi_->frames_size ], frame_, sizeof(GifFrame));
+  fi_->frames_size++;
   return true;
 }
 
@@ -728,7 +729,7 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
       }
     }
 
-    if (!_fi->push_back_frame(&frame)) {
+    if (!push_back_frame(_fi, &frame)) {
       fprintf(stderr, "Fl_Anim_GIF_Image::load(%s): Out of memory", name_);
       close_gif_file();
       return false;
