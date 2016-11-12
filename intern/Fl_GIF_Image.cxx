@@ -28,12 +28,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "fl_gif_private.H"
+#include "fl_gif_private.H"	// GIFLIB decoding functions
 
-/******************************************************************************
- This routine is a modified version of DGifImageSlurp()
- that reads only one image per time.
-*******************************************************************************/
+//
+// This routine is a modified version of DGifImageSlurp()
+// that reads only one image per time.
+//
 
 static SavedImage *DGifSlurpImage(GifFileType *GifFile) {
   size_t ImageSize;
@@ -151,9 +151,6 @@ static SavedImage *DGifSlurpImage(GifFileType *GifFile) {
 
 typedef unsigned char uchar;
 
-#define NEXTBYTE (uchar)getc(GifFile)
-#define GETSHORT(var) var = NEXTBYTE; var += NEXTBYTE << 8
-
 /**
  The constructor loads the named GIF image.
 
@@ -165,7 +162,7 @@ typedef unsigned char uchar;
  GIF format could not be decoded, and ERR_NO_IMAGE if the image could not
  be loaded for another reason.
  */
-Fl_GIF_Image::Fl_GIF_Image(const char *infname, int anim/*=0*/) : Fl_Pixmap((char *const*)0),
+Fl_GIF_Image::Fl_GIF_Image(const char *infname, bool anim/*=false*/) : Fl_Pixmap((char *const*)0),
   gif_handle(0) {
   GifFileType *gifFileIn;
   int errorCode;
@@ -333,12 +330,20 @@ void *Fl_GIF_Image::read_next_image() {
   return s;
 }
 
+//
+// Fl_Anim_GIF_Image implementation as extension of Fl_GIF_Image
+//
+
 #include <FL/Fl_Anim_GIF_Image.H>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <FL/Fl_RGB_Image.H>
 #include <FL/Fl.H>
+
+//
+//  Internal helper classes/structs
+//
 
 class RGB_Image : public Fl_RGB_Image {
   typedef Fl_RGB_Image Inherited;
@@ -447,7 +452,7 @@ struct FrameInfo {
 };
 
 #include <FL/Fl.H>			// for Fl::add_timeout()
-#include <FL/Fl_Group.H>
+#include <FL/Fl_Group.H>	// for Fl_Group::parent()
 
 #define DEBUG(x) if ( _fi->debug ) printf x
 //#define DEBUG(x)
@@ -613,7 +618,7 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   clear_frames();
 
   // open gif file for readin
-  int errorCode;
+  int errorCode(0);
   GifFileType *gifFileIn = (GifFileType *)gif_handle;
   if (gifFileIn == NULL) {
     fprintf(stderr, "open '%s': %s\n", name_, GifErrorString(errorCode));
@@ -804,7 +809,7 @@ void Fl_Anim_GIF_Image::cb_animate(void *d_) {
   b->nextFrame();
 }
 
-// TODO: implement desaturate(), color_average(), copy()?
+// TODO: implement Fl_Anim_GIF_Image::desaturate() / color_average() / copy()?
 
 //
 // End of "$Id: Fl_GIF_Image.cxx 10751 2015-06-14 17:07:31Z AlbrechtS $".
