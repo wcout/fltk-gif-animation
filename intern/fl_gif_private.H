@@ -151,59 +151,6 @@ typedef struct GraphicsControlBlock {
 } GraphicsControlBlock;
 
 /******************************************************************************
- GIF encoding routines
-******************************************************************************/
-
-/* Main entry points */
-GifFileType *EGifOpenFileName(const char *GifFileName,
-                              const bool GifTestExistence, int *Error);
-GifFileType *EGifOpenFileHandle(const int GifFileHandle, int *Error);
-GifFileType *EGifOpen(void *userPtr, OutputFunc writeFunc, int *Error);
-int EGifSpew(GifFileType * GifFile);
-const char *EGifGetGifVersion(GifFileType *GifFile); /* new in 5.x */
-int EGifCloseFile(GifFileType *GifFile, int *ErrorCode);
-
-#define E_GIF_SUCCEEDED          0
-#define E_GIF_ERR_OPEN_FAILED    1    /* And EGif possible errors. */
-#define E_GIF_ERR_WRITE_FAILED   2
-#define E_GIF_ERR_HAS_SCRN_DSCR  3
-#define E_GIF_ERR_HAS_IMAG_DSCR  4
-#define E_GIF_ERR_NO_COLOR_MAP   5
-#define E_GIF_ERR_DATA_TOO_BIG   6
-#define E_GIF_ERR_NOT_ENOUGH_MEM 7
-#define E_GIF_ERR_DISK_IS_FULL   8
-#define E_GIF_ERR_CLOSE_FAILED   9
-#define E_GIF_ERR_NOT_WRITEABLE  10
-
-/* These are legacy.  You probably do not want to call them directly */
-int EGifPutScreenDesc(GifFileType *GifFile,
-                      const int GifWidth, const int GifHeight, 
-		      const int GifColorRes,
-                      const int GifBackGround,
-                      const ColorMapObject *GifColorMap);
-int EGifPutImageDesc(GifFileType *GifFile, 
-		     const int GifLeft, const int GifTop,
-                     const int GifWidth, const int GifHeight, 
-		     const bool GifInterlace,
-                     const ColorMapObject *GifColorMap);
-void EGifSetGifVersion(GifFileType *GifFile, const bool gif89);
-int EGifPutLine(GifFileType *GifFile, GifPixelType *GifLine,
-                int GifLineLen);
-int EGifPutPixel(GifFileType *GifFile, const GifPixelType GifPixel);
-int EGifPutComment(GifFileType *GifFile, const char *GifComment);
-int EGifPutExtensionLeader(GifFileType *GifFile, const int GifExtCode);
-int EGifPutExtensionBlock(GifFileType *GifFile,
-                         const int GifExtLen, const void *GifExtension);
-int EGifPutExtensionTrailer(GifFileType *GifFile);
-int EGifPutExtension(GifFileType *GifFile, const int GifExtCode, 
-		     const int GifExtLen,
-                     const void *GifExtension);
-int EGifPutCode(GifFileType *GifFile, int GifCodeSize,
-                const GifByteType *GifCodeBlock);
-int EGifPutCodeNext(GifFileType *GifFile,
-                    const GifByteType *GifCodeBlock);
-
-/******************************************************************************
  GIF decoding routines
 ******************************************************************************/
 
@@ -344,36 +291,6 @@ GifErrorString(int ErrorCode)
     const char *Err;
 
     switch (ErrorCode) {
-      case E_GIF_ERR_OPEN_FAILED:
-        Err = "Failed to open given file";
-        break;
-      case E_GIF_ERR_WRITE_FAILED:
-        Err = "Failed to write to given file";
-        break;
-      case E_GIF_ERR_HAS_SCRN_DSCR:
-        Err = "Screen descriptor has already been set";
-        break;
-      case E_GIF_ERR_HAS_IMAG_DSCR:
-        Err = "Image descriptor is still active";
-        break;
-      case E_GIF_ERR_NO_COLOR_MAP:
-        Err = "Neither global nor local color map";
-        break;
-      case E_GIF_ERR_DATA_TOO_BIG:
-        Err = "Number of pixels bigger than width * height";
-        break;
-      case E_GIF_ERR_NOT_ENOUGH_MEM:
-        Err = "Failed to allocate required memory";
-        break;
-      case E_GIF_ERR_DISK_IS_FULL:
-        Err = "Write failed (disk full?)";
-        break;
-      case E_GIF_ERR_CLOSE_FAILED:
-        Err = "Failed to close given file";
-        break;
-      case E_GIF_ERR_NOT_WRITEABLE:
-        Err = "Given file was not opened for write";
-        break;
       case D_GIF_ERR_OPEN_FAILED:
         Err = "Failed to open given file";
         break;
