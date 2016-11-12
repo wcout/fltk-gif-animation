@@ -129,7 +129,6 @@ static void change_speed(bool up_) {
 }
 
 static int events(int event_) {
-  Fl::first_window()->redraw();
   if (event_ == FL_SHORTCUT) {
     if (Fl::event_key() == '+')
       change_speed(true);
