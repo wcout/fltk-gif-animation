@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# put the path to your FLTK repository here (relative to subdir 'intern')
-fltk=../../fltk-1.3
+# put the path to your FLTK repository here
+fltk=../fltk-1.3
 
 target=animgifimage
 src=intern
@@ -9,9 +9,9 @@ src=intern
 
 # copy files into FLTK repo & compile FLTK
 if [ "$1" = "all" ]; then
-	cp -a $src/fl_*.H $fltk/src/.
-	cp -a $src/*GIF*.H $fltk/FL/.
-	cp -a $src/*GIF*.cxx $fltk/src/.
+	cp -av $src/fl_*.H $fltk/src/.
+	cp -av $src/*GIF*.H $fltk/FL/.
+	cp -av $src/*GIF*.cxx $fltk/src/.
 
 	cwd=$(pwd)
 	cd $fltk
@@ -20,8 +20,4 @@ if [ "$1" = "all" ]; then
 fi
 
 # build the testprogram
-cwd=$(pwd)
-cd $src
-g++ -Wall -pipe -pedantic -O3 $opt -o $target `$fltk/fltk-config --use-images --cxxflags` $target.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt
-cd $cwd
-mv $src/$target .
+g++ -Wall -pipe -pedantic -O3 $opt -o $target `$fltk/fltk-config --use-images --cxxflags` $src/$target.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt
