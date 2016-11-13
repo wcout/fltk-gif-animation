@@ -786,15 +786,17 @@ Fl_Widget *Fl_Anim_GIF_Image::canvas() const {
   return _canvas;
 }
 
-void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_) {
+void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, bool set_image_/* = true*/) {
   if (_canvas)
     _canvas->image(0);
   _canvas = canvas_;
-  if (_canvas)
+  if (_canvas && set_image_)
     _canvas->image(this);
   _frame = -1;
-  Fl::remove_timeout(cb_animate, this);
-  nextFrame();
+  if (Fl::has_timeout(cb_animate, this)) {
+    Fl::remove_timeout(cb_animate, this);
+    nextFrame();
+  }
 }
 
 const char *Fl_Anim_GIF_Image::name() const {

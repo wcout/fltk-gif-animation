@@ -33,7 +33,7 @@ public:
   Fl_Image *image() const;
   Fl_Image *image(int frame_) const;
   const char *name() const;
-  void canvas(Fl_Widget *canvas_);
+  void canvas(Fl_Widget *canvas_, bool set_as_image = true);
   Fl_Widget *canvas() const;
   bool start();
   double speed() const;
