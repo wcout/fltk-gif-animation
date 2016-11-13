@@ -7,12 +7,14 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_Shared_Image.H>
+#include <FL/Fl_Tiled_Image.H>
 
 //#define BACKGROUND FL_RED	// use this to see transparent parts better
 #define BACKGROUND FL_GRAY
 //#define BACKGROUND FL_BLACK
 
 static bool GtestForcedRedraw = false;
+static bool GtestTiles = false;
 static const double GredrawDelay = 1./50;
 
 static void quit_cb(Fl_Widget* w_, void*) {
@@ -47,28 +49,40 @@ bool openFile(const char *name_, bool debug_, bool close_ = false,
   if (close_)
     win->callback(quit_cb);
   printf("\nLoading '%s'%s\n", name_, uncache_ ? " (uncached)" : "");
-  Fl_Box *canvas = new Fl_Box(0, 0, 0, 0); // canvas for animation
+  Fl_Box *canvas = GtestTiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas for animation
   Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, false, debug_);
   animgif->uncache(uncache_);
+  int W = animgif->w();
+  int H = animgif->h();
   if (animgif->frames()) {
-    int W = animgif->w();
-#if 1
-    // demonstrate a way how to use same animation in another canvas simultaneously:
-    // as the current implementation allows only automatic redraw of one canvas..
-    if (GtestForcedRedraw) {
-      if (W < 400) {
-        canvas = new Fl_Box(W, 0, animgif->w(), animgif->h()); // another canvas for animation
-        canvas->image(animgif); // is set to same animation!
-        W *= 2;
-        Fl::add_timeout(GredrawDelay, cb_forced_redraw); // force periodic redraw
+    if (GtestTiles) {
+      // demonstrate a way how to use the animation with Fl_Tiled_Image
+      W *= 2;
+      H *= 2;
+      Fl_Tiled_Image *tiled_image = new Fl_Tiled_Image(animgif);
+      Fl_Group *group = new Fl_Group(0, 0, win->w(), win->h() );
+      group->image(tiled_image);
+      group->align(FL_ALIGN_INSIDE);
+      animgif->canvas(group, false);
+      win->resizable(group);
+    }
+    else {
+      // demonstrate a way how to use same animation in another canvas simultaneously:
+      // as the current implementation allows only automatic redraw of one canvas..
+      if (GtestForcedRedraw) {
+        if (W < 400) {
+          canvas = new Fl_Box(W, 0, animgif->w(), animgif->h()); // another canvas for animation
+          canvas->image(animgif); // is set to same animation!
+          W *= 2;
+          Fl::add_timeout(GredrawDelay, cb_forced_redraw); // force periodic redraw
+        }
       }
     }
-#endif
     win->end();
-    win->size(W, animgif->h());
     set_title(win, animgif);
     win->show();
     win->wait_for_expose();
+    win->size(W, H);
     animgif->start();
   } else {
     delete win;
@@ -116,7 +130,12 @@ bool openDirectory(const char *dir_, bool uncache_) {
 static void change_speed(bool up_) {
   Fl_Widget *below = Fl::belowmouse();
   if (below && below->image()) {
-    Fl_Anim_GIF_Image *animgif = static_cast<Fl_Anim_GIF_Image *>(below->image());
+    Fl_Anim_GIF_Image *animgif = 0;
+    // is there another way to determine Fl_Tiled_Image?
+    Fl_Tiled_Image *tiled = dynamic_cast<Fl_Tiled_Image *>(below->image());
+    animgif = tiled ?
+       dynamic_cast<Fl_Anim_GIF_Image *>(tiled->image()) :
+       dynamic_cast<Fl_Anim_GIF_Image *>(below->image());
     if (animgif) {
       double speed = animgif->speed();
       if (up_) speed += 0.1;
@@ -148,7 +167,7 @@ int main(int argc_, char *argv_[]) {
     if (strstr(argv_[1], "-h")) {
       printf("Usage:\n"
              "   -t [directory] [-u]   open all files in directory (default name: %s) [uncached]\n"
-             "   filename [-d]         open single file [in debug mode]\n"
+             "   filename [-d][-t]     open single file [in debug mode] [as tiled image]\n"
              "   No arguments open fileselector\n"
              "   Use keys '+'/'-' to change speed of the active image.\n", testsuite);
       exit(1);
@@ -169,6 +188,8 @@ int main(int argc_, char *argv_[]) {
           debug = true;
         if (!strcmp(argv_[i], "-f"))
           GtestForcedRedraw = true;
+        if (!strcmp(argv_[i], "-t"))
+          GtestTiles = true;
       }
       for (int i = 1; i < argc_; i++)
         if (argv_[i][0] != '-')
