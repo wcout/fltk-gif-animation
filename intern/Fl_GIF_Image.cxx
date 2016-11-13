@@ -608,7 +608,7 @@ bool Fl_Anim_GIF_Image::nextFrame() {
   double delay = _fi->frames[_frame].delay;
   if (delay > 0 && _speed > 0) {	// normal GIF has no delay
     delay /= _speed;
-    Fl::repeat_timeout(delay, cb_animate, this);
+    Fl::add_timeout(delay, cb_animate, this);
   }
   return true;
 }
@@ -773,7 +773,7 @@ int Fl_Anim_GIF_Image::frame() const {
 }
 
 Fl_Image *Fl_Anim_GIF_Image::image() const {
-  return _fi->frames[_frame].rgb;
+  return _frame < frames() ? _fi->frames[_frame].rgb : 0;
 }
 
 Fl_Image *Fl_Anim_GIF_Image::image(int frame_) const {
@@ -793,6 +793,7 @@ void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_) {
   if (_canvas)
     _canvas->image(this);
   _frame = -1;
+  Fl::remove_timeout(cb_animate, this);
   nextFrame();
 }
 
