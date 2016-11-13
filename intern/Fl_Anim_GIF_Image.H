@@ -38,7 +38,7 @@ public:
   bool start();
   double speed() const;
   void speed(double speed_);
-  void uncache( bool uncache_ );
+  void uncache(bool uncache_);
   bool uncache() const;
   bool valid() const;
 protected:
