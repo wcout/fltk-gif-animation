@@ -13,6 +13,7 @@
 //#define BACKGROUND FL_BLACK
 
 static bool GtestForcedRedraw = false;
+static const double GredrawDelay = 1./50;
 
 static void quit_cb(Fl_Widget* w_, void*) {
   exit(0);
@@ -35,7 +36,7 @@ static void cb_forced_redraw(void *d_) {
     win = Fl::next_window(win);
   }
   if (Fl::first_window())
-    Fl::repeat_timeout(1./50, cb_forced_redraw);
+    Fl::repeat_timeout(GredrawDelay, cb_forced_redraw);
 }
 
 bool openFile(const char *name_, bool debug_, bool close_ = false,
@@ -59,7 +60,7 @@ bool openFile(const char *name_, bool debug_, bool close_ = false,
         canvas = new Fl_Box(W, 0, animgif->w(), animgif->h()); // another canvas for animation
         canvas->image(animgif); // is set to same animation!
         W *= 2;
-        Fl::add_timeout(1./50, cb_forced_redraw); // force periodic redraw
+        Fl::add_timeout(GredrawDelay, cb_forced_redraw); // force periodic redraw
       }
     }
 #endif
