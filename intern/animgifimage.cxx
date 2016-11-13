@@ -25,7 +25,7 @@ static void set_title(Fl_Window *win_, Fl_Anim_GIF_Image *animgif_) {
   if (animgif_->uncache())
     strcat(buf, " U");
   win_->copy_label(buf);
-  win_->copy_tooltip(strdup(buf));
+  win_->copy_tooltip(buf);
 }
 
 static void cb_forced_redraw(void *d_) {
@@ -35,9 +35,7 @@ static void cb_forced_redraw(void *d_) {
     win = Fl::next_window(win);
   }
   if (Fl::first_window())
-    Fl::add_timeout(0.02, cb_forced_redraw);
-  else
-    Fl::remove_timeout(cb_forced_redraw);
+    Fl::repeat_timeout(1./50, cb_forced_redraw);
 }
 
 bool openFile(const char *name_, bool debug_, bool close_ = false,
@@ -51,19 +49,21 @@ bool openFile(const char *name_, bool debug_, bool close_ = false,
   Fl_Box *canvas = new Fl_Box(0, 0, 0, 0); // canvas for animation
   Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, false, debug_);
   animgif->uncache(uncache_);
-  int W = animgif->w();
-  if (GtestForcedRedraw) {
+  if (animgif->frames()) {
+    int W = animgif->w();
+#if 1
     // demonstrate a way how to use same animation in another canvas simultaneously:
     // as the current implementation allows only automatic redraw of one canvas..
-    if (W < 400) {
-      Fl::add_timeout(0.02, cb_forced_redraw); // must force periodic redraw
-      canvas = new Fl_Box(W, 0, animgif->w(), animgif->h()); // the other canvas for animation
-      canvas->image(animgif); // set to same animation!
-      W *= 2;
+    if (GtestForcedRedraw) {
+      if (W < 400) {
+        canvas = new Fl_Box(W, 0, animgif->w(), animgif->h()); // another canvas for animation
+        canvas->image(animgif); // is set to same animation!
+        W *= 2;
+        Fl::add_timeout(1./50, cb_forced_redraw); // force periodic redraw
+      }
     }
-  }
-  win->end();
-  if (animgif->frames()) {
+#endif
+    win->end();
     win->size(W, animgif->h());
     set_title(win, animgif);
     win->show();
@@ -76,9 +76,9 @@ bool openFile(const char *name_, bool debug_, bool close_ = false,
   if (debug_) {
     for (int i = 0; i < animgif->frames(); i++) {
       char buf[200];
-      sprintf(buf, "Frame #%d\n", i + 1);
+      sprintf(buf, "Frame #%d", i + 1);
       Fl_Double_Window *win = new Fl_Double_Window(animgif->w(), animgif->h());
-      win->tooltip(strdup(buf));
+      win->copy_tooltip(buf);
       win->copy_label(buf);
       win->color(BACKGROUND);
       Fl_Box *b = new Fl_Box(0, 0, win->w(), win->h());
