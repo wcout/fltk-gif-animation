@@ -46,6 +46,20 @@ The current status is promising - it works well, but needs some more tests.
 I will stay with Solution 2 for now and try to improve a few aspects, but
 it may take some time.
 
+*Update:*
+
+A few bugs have been fixed in Solution 2 that have not been reflected in
+Solution 1 yet.
+
+Issues remaining in Solution 2:
+
+- How to make it usable as `Fl_Shared_Image`? One problem is, that `Fl_Shared_Image`
+  works through file extension, so how to decide if to make an normal GIF or an
+  animated GIF?
+
+- Can the API for `Fl_Image()` derived classes be completed? E.g. how to implement
+  `Fl_Animated_GIF_Image::color_average()`/`desaturate()` and `copy()`?
+
 ## Test
 
 You can test the different solutions with the test programs in each folder.
