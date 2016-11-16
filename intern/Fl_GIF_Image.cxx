@@ -519,7 +519,9 @@ static void dispose(RGB_Image &new_data, FrameInfo *_fi) {
   }
 }
 
-Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_, Fl_Widget *canvas_ , bool start_ /* = false*/,
+Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
+                                     Fl_Widget *canvas_/* = 0*/,
+                                     bool start_ /* = false*/,
                                      bool debug_/* = false*/) :
   Inherited(name_, 1),
   _name(strdup(name_)),
