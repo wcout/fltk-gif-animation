@@ -13,9 +13,7 @@
 #define BACKGROUND FL_GRAY
 //#define BACKGROUND FL_BLACK
 
-static bool GtestForcedRedraw = false;
-static bool GtestTiles = false;
-static const double GredrawDelay = 1./50;
+static const double RedrawDelay = 1./50;
 
 static void quit_cb(Fl_Widget* w_, void*) {
   exit(0);
@@ -38,43 +36,48 @@ static void cb_forced_redraw(void *d_) {
     win = Fl::next_window(win);
   }
   if (Fl::first_window())
-    Fl::repeat_timeout(GredrawDelay, cb_forced_redraw);
+    Fl::repeat_timeout(RedrawDelay, cb_forced_redraw);
 }
 
-bool openFile(const char *name_, bool debug_, bool close_ = false,
-              bool uncache_ = false) {
+bool openFile(const char *name_, char *flags_, bool close_ = false) {
+  bool uncache = strchr(flags_, 'u');
+  bool debug = strchr(flags_, 'd');
+  bool desaturate = strchr(flags_, 'D');
+  bool test_tiles = strchr(flags_, 'T');
+  bool test_forced_redraw = strchr(flags_, 'f');
   Fl::remove_timeout(cb_forced_redraw);
   Fl_Double_Window *win = new Fl_Double_Window(100, 100);
   win->color(BACKGROUND);
   if (close_)
     win->callback(quit_cb);
-  printf("\nLoading '%s'%s\n", name_, uncache_ ? " (uncached)" : "");
-  Fl_Box *canvas = GtestTiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas for animation
-  Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, false, debug_);
-  animgif->uncache(uncache_);
+  printf("\nLoading '%s'%s\n", name_, uncache ? " (uncached)" : "");
+  Fl_Box *canvas = test_tiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas for animation
+  Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, false, debug);
+  animgif->uncache(uncache);
+  if (desaturate)
+    animgif->desaturate();
   int W = animgif->w();
   int H = animgif->h();
   if (animgif->frames()) {
-    if (GtestTiles) {
+    if (test_tiles) {
       // demonstrate a way how to use the animation with Fl_Tiled_Image
       W *= 2;
       H *= 2;
       Fl_Tiled_Image *tiled_image = new Fl_Tiled_Image(animgif);
-      Fl_Group *group = new Fl_Group(0, 0, win->w(), win->h() );
+      Fl_Group *group = new Fl_Group(0, 0, win->w(), win->h());
       group->image(tiled_image);
       group->align(FL_ALIGN_INSIDE);
       animgif->canvas(group, false);
       win->resizable(group);
-    }
-    else {
+    } else {
       // demonstrate a way how to use same animation in another canvas simultaneously:
       // as the current implementation allows only automatic redraw of one canvas..
-      if (GtestForcedRedraw) {
+      if (test_forced_redraw) {
         if (W < 400) {
           canvas = new Fl_Box(W, 0, animgif->w(), animgif->h()); // another canvas for animation
           canvas->image(animgif); // is set to same animation!
           W *= 2;
-          Fl::add_timeout(GredrawDelay, cb_forced_redraw); // force periodic redraw
+          Fl::add_timeout(RedrawDelay, cb_forced_redraw); // force periodic redraw
         }
       }
     }
@@ -88,7 +91,7 @@ bool openFile(const char *name_, bool debug_, bool close_ = false,
     delete win;
     return false;
   }
-  if (debug_) {
+  if (debug) {
     for (int i = 0; i < animgif->frames(); i++) {
       char buf[200];
       sprintf(buf, "Frame #%d", i + 1);
@@ -107,7 +110,7 @@ bool openFile(const char *name_, bool debug_, bool close_ = false,
 
 #include <sys/types.h>
 #include <dirent.h>
-bool openDirectory(const char *dir_, bool uncache_) {
+bool openDirectory(const char *dir_, char *flags_) {
   DIR *dir = opendir(dir_);
   if (!dir)
     return false;
@@ -119,8 +122,9 @@ bool openDirectory(const char *dir_, bool uncache_) {
     if (!strcmp(name, ".") || !strcmp(name, "..")) continue;
     if (!strstr(name, ".gif") && !strstr(name, ".GIF")) continue;
     sprintf(buf, "%s/%s", dir_, name);
-    bool debug = strstr(name, "debug");	// when name contains 'debug' open single frames
-    if (openFile(buf, debug, cnt == 0, uncache_))
+    if (strstr(name, "debug"))	// when name contains 'debug' open single frames
+      strcat(flags_, "d");
+    if (openFile(buf, flags_, cnt == 0))
       cnt++;
   }
   closedir(dir);
@@ -134,8 +138,8 @@ static void change_speed(bool up_) {
     // is there another way to determine Fl_Tiled_Image?
     Fl_Tiled_Image *tiled = dynamic_cast<Fl_Tiled_Image *>(below->image());
     animgif = tiled ?
-       dynamic_cast<Fl_Anim_GIF_Image *>(tiled->image()) :
-       dynamic_cast<Fl_Anim_GIF_Image *>(below->image());
+              dynamic_cast<Fl_Anim_GIF_Image *>(tiled->image()) :
+              dynamic_cast<Fl_Anim_GIF_Image *>(below->image());
     if (animgif) {
       double speed = animgif->speed();
       if (up_) speed += 0.1;
@@ -163,44 +167,37 @@ static const char testsuite[] = "testsuite";
 int main(int argc_, char *argv_[]) {
   fl_register_images();
   Fl::add_handler(events);
+  char *openFlags = (char *)calloc(1024, 1);
   if (argc_ > 1) {
     if (strstr(argv_[1], "-h")) {
       printf("Usage:\n"
              "   -t [directory] [-u]   open all files in directory (default name: %s) [uncached]\n"
-             "   filename [-d][-t]     open single file [in debug mode] [as tiled image]\n"
+             "   filename [-d][-T][-D] open single file [in debug mode] [as tiled image] [desaturated]\n"
              "   No arguments open fileselector\n"
              "   Use keys '+'/'-' to change speed of the active image.\n", testsuite);
       exit(1);
     }
-    if (!strcmp(argv_[1], "-t")) {
-      bool uncache = false;
+    for (int i = 1; i < argc_; i++) {
+      if (argv_[i][0] == '-')
+        strcat(openFlags, &argv_[i][1]);
+    }
+    if (strchr(openFlags, 't')) {
       const char *dir = testsuite;
       for (int i = 2; i < argc_; i++)
-        if (!strcmp(argv_[i], "-u"))
-          uncache = true;
-        else if (argv_[i][0] != '-')
+        if (argv_[i][0] != '-')
           dir = argv_[i];
-      openDirectory(dir, uncache);
+      openDirectory(dir, openFlags);
     } else {
-      bool debug = false;
-      for (int i = 1; i < argc_; i++) {
-        if (!strcmp(argv_[i], "-d"))
-          debug = true;
-        if (!strcmp(argv_[i], "-f"))
-          GtestForcedRedraw = true;
-        if (!strcmp(argv_[i], "-t"))
-          GtestTiles = true;
-      }
       for (int i = 1; i < argc_; i++)
         if (argv_[i][0] != '-')
-          openFile(argv_[i], debug, debug);
+          openFile(argv_[i], openFlags, strchr(openFlags, 'd'));
     }
   } else {
     while (1) {
       const char *filename = fl_file_chooser("Select a GIF image file","*.{gif,GIF}", NULL);
       if (!filename)
         break;
-      openFile(filename, false);
+      openFile(filename, openFlags);
       Fl::run();
     }
   }
