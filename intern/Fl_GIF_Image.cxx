@@ -325,6 +325,7 @@ Fl_GIF_Image::~Fl_GIF_Image() {
 void Fl_GIF_Image::close_gif_file() {
   if (gif_handle) {
     DGifCloseFile((GifFileType *)gif_handle, 0);
+    gif_handle = 0;
   }
 }
 
@@ -422,6 +423,7 @@ void RGB_Image::setToColor(const RGBA_Color c_, bool alpha_/* = false*/) const {
 struct GifFrame {
   GifFrame() :
     rgb(0),
+    to_desaturate(false),
     x(0),
     y(0),
     w(0),
@@ -431,6 +433,7 @@ struct GifFrame {
     transparent(false),
     transparent_color_index(-1) {}
   RGB_Image *rgb;                          // full frame image
+  bool to_desaturate;                      // flag if desaturate() is required
   int x, y, w, h;                          // frame original dimensions
   double delay;                            // delay (already converted to ms)
   int dispose;                             // disposal method
@@ -593,6 +596,12 @@ bool Fl_Anim_GIF_Image::nextFrame() {
   // NOTE: uncaching decreases performance, but saves a lot of memory
   if (_uncache && this->image())
     this->image()->uncache();
+
+  // desaturate pending?
+  if (_fi->frames[_frame].to_desaturate) {
+     _fi->frames[_frame].rgb->desaturate();
+     _fi->frames[_frame].to_desaturate = false;
+  }
 
   if (canvas()) {
     if ((last_frame >= 0 && _fi->frames[last_frame].dispose == DISPOSE_BACKGROUND) ||
@@ -828,6 +837,13 @@ bool Fl_Anim_GIF_Image::valid() const {
 void Fl_Anim_GIF_Image::cb_animate(void *d_) {
   Fl_Anim_GIF_Image *b = (Fl_Anim_GIF_Image *)d_;
   b->nextFrame();
+}
+
+/*virtual*/
+void Fl_Anim_GIF_Image::desaturate() {
+  for ( int i = 0; i < _fi->frames_size; i++ ) {
+    _fi->frames[i].to_desaturate = true;
+  }
 }
 
 // TODO: implement Fl_Anim_GIF_Image::desaturate() / color_average() / copy()?

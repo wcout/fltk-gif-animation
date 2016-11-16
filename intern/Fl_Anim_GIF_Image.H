@@ -23,6 +23,7 @@ class Fl_Anim_GIF_Image : public Fl_GIF_Image {
 public:
   Fl_Anim_GIF_Image(const char *name_, Fl_Widget *canvas_ = 0, bool start_ = false, bool debug_ = false);
   virtual ~Fl_Anim_GIF_Image();
+  virtual void desaturate();
   virtual void draw(int x_, int y_, int w_, int h_, int cx_ = 0, int cy_ = 0);
   int canvas_w() const;
   int canvas_h() const;
