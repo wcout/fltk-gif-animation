@@ -423,7 +423,7 @@ void RGB_Image::setToColor(const RGBA_Color c_, bool alpha_/* = false*/) const {
 struct GifFrame {
   GifFrame() :
     rgb(0),
-    desaturate(false),
+    desaturated(false),
     x(0),
     y(0),
     w(0),
@@ -433,7 +433,7 @@ struct GifFrame {
     transparent(false),
     transparent_color_index(-1) {}
   RGB_Image *rgb;                          // full frame image
-  bool desaturate;                         // flag if desaturate() is required
+  bool desaturated;                        // flag if frame is desaturated
   int x, y, w, h;                          // frame original dimensions
   double delay;                            // delay (already converted to ms)
   int dispose;                             // disposal method
@@ -457,6 +457,7 @@ struct FrameInfo {
   GifFrame frame;                          // current processed frame
   int canvas_w;                            // width of GIF from header
   int canvas_h;                            // height of GIF from header
+  bool desaturate;                         // flag if frames should be desaturated
   bool debug;                              // Flag for debug outputs
 };
 
@@ -598,7 +599,7 @@ bool Fl_Anim_GIF_Image::nextFrame() {
     this->image()->uncache();
 
   // desaturate pending?
-  if (_fi.desaturated && !_fi->frames[_frame].desaturated) {
+  if (_fi->desaturate && !_fi->frames[_frame].desaturated) {
      _fi->frames[_frame].rgb->desaturate();
      _fi->frames[_frame].desaturated = true;
   }
