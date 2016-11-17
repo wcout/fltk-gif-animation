@@ -43,6 +43,7 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
   bool uncache = strchr(flags_, 'u');
   bool debug = strchr(flags_, 'd');
   bool desaturate = strchr(flags_, 'D');
+  bool average = strchr(flags_, 'A');
   bool test_tiles = strchr(flags_, 'T');
   bool test_forced_redraw = strchr(flags_, 'f');
   Fl::remove_timeout(cb_forced_redraw);
@@ -54,6 +55,8 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
   Fl_Box *canvas = test_tiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas for animation
   Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, false, debug);
   animgif->uncache(uncache);
+  if (average)
+    animgif->color_average(FL_GREEN, 0.5); // currently hardcoded
   if (desaturate)
     animgif->desaturate();
   int W = animgif->w();

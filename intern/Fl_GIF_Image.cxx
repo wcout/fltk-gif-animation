@@ -423,6 +423,8 @@ void RGB_Image::setToColor(const RGBA_Color c_, bool alpha_/* = false*/) const {
 struct GifFrame {
   GifFrame() :
     rgb(0),
+    average_color(FL_BLACK),
+    average_weight(-1),
     desaturated(false),
     x(0),
     y(0),
@@ -433,6 +435,8 @@ struct GifFrame {
     transparent(false),
     transparent_color_index(-1) {}
   RGB_Image *rgb;                          // full frame image
+  Fl_Color average_color;                  // last average color
+  float average_weight;                    // last average weight
   bool desaturated;                        // flag if frame is desaturated
   int x, y, w, h;                          // frame original dimensions
   double delay;                            // delay (already converted to ms)
@@ -449,6 +453,9 @@ struct FrameInfo {
     background_color_index(-1),
     canvas_w(0),
     canvas_h(0),
+    desaturate(false),
+    average_color(FL_BLACK),
+    average_weight(-1),
     debug(false) {}
   int frames_size;                         // number of frames stored in 'frames'
   GifFrame *frames;                        // "vector" for frames
@@ -458,6 +465,8 @@ struct FrameInfo {
   int canvas_w;                            // width of GIF from header
   int canvas_h;                            // height of GIF from header
   bool desaturate;                         // flag if frames should be desaturated
+  Fl_Color average_color;                  // color for color_average()
+  float average_weight;                    // weight for color_average (negative: none)
   bool debug;                              // Flag for debug outputs
 };
 
@@ -597,6 +606,15 @@ bool Fl_Anim_GIF_Image::nextFrame() {
   // NOTE: uncaching decreases performance, but saves a lot of memory
   if (_uncache && this->image())
     this->image()->uncache();
+
+  // color average pending?
+  if (_fi->average_weight >= 0 && _fi->average_weight < 1 &&
+     ((_fi->average_color != _fi->frames[_frame].average_color) ||
+      (_fi->average_weight != _fi->frames[_frame].average_weight))) {
+     _fi->frames[_frame].rgb->color_average(_fi->average_color, _fi->average_weight);
+     _fi->frames[_frame].average_color = _fi->average_color;
+     _fi->frames[_frame].average_weight = _fi->average_weight;
+  }
 
   // desaturate pending?
   if (_fi->desaturate && !_fi->frames[_frame].desaturated) {
@@ -842,6 +860,8 @@ void Fl_Anim_GIF_Image::cb_animate(void *d_) {
 
 /*virtual*/
 void Fl_Anim_GIF_Image::color_average(Fl_Color c_, float i_) {
+  _fi->average_color = c_;
+  _fi->average_weight = i_;
 }
 
 /*virtual*/
