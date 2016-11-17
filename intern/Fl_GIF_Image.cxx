@@ -423,7 +423,7 @@ void RGB_Image::setToColor(const RGBA_Color c_, bool alpha_/* = false*/) const {
 struct GifFrame {
   GifFrame() :
     rgb(0),
-    to_desaturate(false),
+    desaturate(false),
     x(0),
     y(0),
     w(0),
@@ -433,7 +433,7 @@ struct GifFrame {
     transparent(false),
     transparent_color_index(-1) {}
   RGB_Image *rgb;                          // full frame image
-  bool to_desaturate;                      // flag if desaturate() is required
+  bool desaturate;                         // flag if desaturate() is required
   int x, y, w, h;                          // frame original dimensions
   double delay;                            // delay (already converted to ms)
   int dispose;                             // disposal method
@@ -598,9 +598,9 @@ bool Fl_Anim_GIF_Image::nextFrame() {
     this->image()->uncache();
 
   // desaturate pending?
-  if (_fi->frames[_frame].to_desaturate) {
+  if (_fi.desaturated && !_fi->frames[_frame].desaturated) {
      _fi->frames[_frame].rgb->desaturate();
-     _fi->frames[_frame].to_desaturate = false;
+     _fi->frames[_frame].desaturated = true;
   }
 
   if (canvas()) {
@@ -840,10 +840,12 @@ void Fl_Anim_GIF_Image::cb_animate(void *d_) {
 }
 
 /*virtual*/
+void Fl_Anim_GIF_Image::color_average(Fl_Color c_, float i_) {
+}
+
+/*virtual*/
 void Fl_Anim_GIF_Image::desaturate() {
-  for ( int i = 0; i < _fi->frames_size; i++ ) {
-    _fi->frames[i].to_desaturate = true;
-  }
+  _fi->desaturate = true;
 }
 
 // TODO: implement Fl_Anim_GIF_Image::desaturate() / color_average() / copy()?
