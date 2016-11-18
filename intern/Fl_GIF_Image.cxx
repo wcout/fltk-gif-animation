@@ -648,8 +648,9 @@ bool Fl_Anim_GIF_Image::nextFrame() {
 void Fl_Anim_GIF_Image::draw(int x_, int y_, int w_, int h_, int cx_/* = 0*/, int cy_/* = 0*/) {
   if (this->image()) {
     this->image()->draw(x_, y_, w_, h_, cx_, cy_);
-  } else
+  } else {
     Inherited::draw(x_, y_, w_, h_, cx_, cy_);
+  }
 }
 
 bool Fl_Anim_GIF_Image::load(const char *name_) {
@@ -804,7 +805,7 @@ int Fl_Anim_GIF_Image::frame() const {
 }
 
 Fl_Image *Fl_Anim_GIF_Image::image() const {
-  return _frame < frames() ? _fi->frames[_frame].rgb : 0;
+  return _frame >= 0 && _frame < frames() ? _fi->frames[_frame].rgb : 0;
 }
 
 Fl_Image *Fl_Anim_GIF_Image::image(int frame_) const {
