@@ -24,6 +24,7 @@ public:
   Fl_Anim_GIF_Image(const char *name_, Fl_Widget *canvas_ = 0, bool start_ = false, bool debug_ = false);
   virtual ~Fl_Anim_GIF_Image();
   virtual void color_average(Fl_Color c_, float i_);
+  virtual Fl_Image *copy(int W_, int H_);
   virtual void desaturate();
   virtual void draw(int x_, int y_, int w_, int h_, int cx_ = 0, int cy_ = 0);
   int canvas_w() const;
@@ -39,6 +40,8 @@ public:
   Fl_Widget *canvas() const;
   bool start();
   double speed() const;
+  Fl_Anim_GIF_Image& resize(int W_, int H_);
+  Fl_Anim_GIF_Image& resize(double scale_);
   void speed(double speed_);
   void uncache(bool uncache_);
   bool uncache() const;

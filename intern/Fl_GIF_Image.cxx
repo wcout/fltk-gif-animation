@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 #include "fl_gif_private.H"	// GIFLIB decoding functions
+#include <cmath> // lround
 
 //
 // This routine is a modified version of DGifImageSlurp()
@@ -37,7 +38,7 @@
 
 static SavedImage *DGifSlurpImage(GifFileType *GifFile) {
   size_t ImageSize;
-  GifRecordType RecordType;
+  GifRecordType RecordType(UNDEFINED_RECORD_TYPE);
   SavedImage *sp;
   GifByteType *ExtData;
   int ExtFunction;
@@ -609,17 +610,17 @@ bool Fl_Anim_GIF_Image::nextFrame() {
 
   // color average pending?
   if (_fi->average_weight >= 0 && _fi->average_weight < 1 &&
-     ((_fi->average_color != _fi->frames[_frame].average_color) ||
-      (_fi->average_weight != _fi->frames[_frame].average_weight))) {
-     _fi->frames[_frame].rgb->color_average(_fi->average_color, _fi->average_weight);
-     _fi->frames[_frame].average_color = _fi->average_color;
-     _fi->frames[_frame].average_weight = _fi->average_weight;
+      ((_fi->average_color != _fi->frames[_frame].average_color) ||
+       (_fi->average_weight != _fi->frames[_frame].average_weight))) {
+    _fi->frames[_frame].rgb->color_average(_fi->average_color, _fi->average_weight);
+    _fi->frames[_frame].average_color = _fi->average_color;
+    _fi->frames[_frame].average_weight = _fi->average_weight;
   }
 
   // desaturate pending?
   if (_fi->desaturate && !_fi->frames[_frame].desaturated) {
-     _fi->frames[_frame].rgb->desaturate();
-     _fi->frames[_frame].desaturated = true;
+    _fi->frames[_frame].rgb->desaturate();
+    _fi->frames[_frame].desaturated = true;
   }
 
   if (canvas()) {
@@ -859,6 +860,44 @@ void Fl_Anim_GIF_Image::cb_animate(void *d_) {
 }
 
 /*virtual*/
+Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
+  return 0; // not supported currently!
+}
+
+Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(int W_, int H_) {
+  int W(W_);
+  int H(H_);
+  if (_canvas && !W && !H) {
+    W = _canvas->w();
+    H = _canvas->h();
+  }
+  if (!W || !H || ((W == w() && H == h()))) {
+    return *this;
+  }
+  for (int i=0; i < _fi->frames_size; i++) {
+    RGB_Image *rgb =  _fi->frames[i].rgb;
+    Fl_RGB_Image *image = (Fl_RGB_Image *)rgb->copy(W_, H_);
+    _fi->frames[i].rgb = new RGB_Image((uchar *)image->array, image->w(), image->h(), image->d());
+    image->alloc_array = 0;
+    _fi->frames[i].rgb->alloc_array = 1;
+    delete image;
+    delete rgb;
+  }
+  w(W_);
+  h(H_);
+  _fi->canvas_w = w();
+  _fi->canvas_h = h();
+  if (_canvas) {
+    _canvas->size(w(), h());
+  }
+  return *this;
+}
+
+Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(double scale_) {
+  return resize(lround((double)w() * scale_), lround((double)h() * scale_));
+}
+
+/*virtual*/
 void Fl_Anim_GIF_Image::color_average(Fl_Color c_, float i_) {
   _fi->average_color = c_;
   _fi->average_weight = i_;
@@ -869,7 +908,7 @@ void Fl_Anim_GIF_Image::desaturate() {
   _fi->desaturate = true;
 }
 
-// TODO: implement Fl_Anim_GIF_Image::desaturate() / color_average() / copy()?
+// TODO: is it possible to implement copy()?
 
 //
 // End of "$Id: Fl_GIF_Image.cxx 10751 2015-06-14 17:07:31Z AlbrechtS $".

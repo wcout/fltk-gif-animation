@@ -46,6 +46,7 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
   bool average = strchr(flags_, 'A');
   bool test_tiles = strchr(flags_, 'T');
   bool test_forced_redraw = strchr(flags_, 'f');
+  bool resizable = !test_tiles && strchr(flags_, 'r');
   Fl::remove_timeout(cb_forced_redraw);
   Fl_Double_Window *win = new Fl_Double_Window(100, 100);
   win->color(BACKGROUND);
@@ -55,6 +56,8 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
   Fl_Box *canvas = test_tiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas for animation
   Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, false, debug);
   animgif->uncache(uncache);
+  if (resizable) // note: bug in FLTK (STR 3352) - test resize functionality here
+    animgif->resize(0.7); // hardcoded for now!
   if (average)
     animgif->color_average(FL_GREEN, 0.5); // currently hardcoded
   if (desaturate)
@@ -84,6 +87,12 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
         }
       }
     }
+#if 0
+    // NOTE: can't do this currently (FLTK bug STR 3352)
+    if (resizable && canvas) {
+      win->resizable(canvas);
+    }
+#endif
     win->end();
     set_title(win, animgif);
     win->show();
