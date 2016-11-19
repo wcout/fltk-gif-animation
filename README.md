@@ -83,7 +83,7 @@ the test program with `-t`.
 
 Or try the command line options for creating tiles, desaturate and color average.
 
-Change the speed live using `+` and `-' keys.
+Change the speed live using `+` and `-` keys.
 
 Look at the minimal example program `simple.cxx` to get a quick idea how to
 use the class.
@@ -97,5 +97,5 @@ functionality into it.
 
 Perhaps a generic `Fl_Animation` class (or whatever it may be called)
 would make sense - and _one_ constructor for such a class could be an
-`Fl_Animated_GIF_Image` (which would then not be needed to rum the animation, just
-supply the data). Or something like that.
+`Fl_Animated_GIF_Image` (which would then not be needed to run the animation,
+but only to supply the data). Or something like that.
