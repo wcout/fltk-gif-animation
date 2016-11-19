@@ -131,7 +131,7 @@ public:
    */
   bool valid() const;
 protected:
-  bool nextFrame();
+  bool next_frame();
   void clear_frames();
   /**
    The load() is used from the constructor to load

@@ -570,7 +570,7 @@ Fl_Anim_GIF_Image::~Fl_Anim_GIF_Image() {
 
 bool Fl_Anim_GIF_Image::start() {
   if (_fi->frames_size) {
-    nextFrame();
+    next_frame();
   }
   return _fi->frames_size != 0;
 }
@@ -595,7 +595,7 @@ static bool push_back_frame(FrameInfo *fi_, GifFrame *frame_) {
   return true;
 }
 
-bool Fl_Anim_GIF_Image::nextFrame() {
+bool Fl_Anim_GIF_Image::next_frame() {
   int last_frame = _frame;
   _frame++;
   if (_frame >= _fi->frames_size)
@@ -828,7 +828,7 @@ void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, unsigned short flags_/* = 0*/
   _frame = -1;
   if (Fl::has_timeout(cb_animate, this)) {
     Fl::remove_timeout(cb_animate, this);
-    nextFrame();
+    next_frame();
   }
 }
 
@@ -858,7 +858,7 @@ bool Fl_Anim_GIF_Image::valid() const {
 /*static*/
 void Fl_Anim_GIF_Image::cb_animate(void *d_) {
   Fl_Anim_GIF_Image *b = (Fl_Anim_GIF_Image *)d_;
-  b->nextFrame();
+  b->next_frame();
 }
 
 /*virtual*/
