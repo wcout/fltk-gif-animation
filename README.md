@@ -67,6 +67,12 @@ Issues remaining in `Solution 2`:
   - also it works to run several instances of the _same_ animation simultaneously
     and to use it as tiles in `Fl_Tiled_Image`
 
+- Round up the API
+  - allow application controlled playback
+  - specify repeat count
+  - ...
+
+
 ## Test
 
 You can test the different solutions with the test programs in each folder.
