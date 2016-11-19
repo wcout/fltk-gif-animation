@@ -43,28 +43,36 @@ The files there can be copied directly into the FLTK tree to replace the current
 ## Current status
 
 The current status is promising - it works well, but needs some more tests.
-I will stay with Solution 2 for now and try to improve a few aspects, but
+I will stay with `Solution 2` for now and try to improve a few aspects, but
 it may take some time.
 
 *Update:*
 
-A few bugs have been fixed in Solution 2 that have not been reflected in
-Solution 1 yet.
+A few bugs have been fixed in `Solution 2` that have not been reflected in
+`Solution 1` yet.
 
-Issues remaining in Solution 2:
+Issues remaining in `Solution 2`:
 
 - How to make it usable as `Fl_Shared_Image`? One problem is, that `Fl_Shared_Image`
-  works through file extension, so how to decide if to make an normal GIF or an
-  animated GIF?
+  works through file extension (or file header actually), so how to decide if to
+  create an normal GIF or an animated GIF?
 
 - Can the API for `Fl_Image()` derived classes be completed? E.g. how to implement
   `Fl_Animated_GIF_Image::color_average()`/`desaturate()` and `copy()`?
+
+  - `color_average()` and `desaturate()` work now
+  - `copy()` is hard to implement - currently I have implemented a `resize()` method
+    that can be used to _replace_ the current image with the resized one (useful
+    to be called only once therefore)
+  - also it works to run several instances of the _same_ animation simultaneously
+    and to use it as tiles in `Fl_Tiled_Image`
 
 ## Test
 
 You can test the different solutions with the test programs in each folder.
 For the `internal` approach you must have `FLTK` as source distribution to replace
-the mentioned files.
+the mentioned files. As said before `Solution 1` is not as advanced as `Solution 2`
+because I did not develop it further after starting with `Solution 2`.
 
 There are some crude scripts in the root directory that help to compile the test
 programs under Linux.
@@ -72,3 +80,22 @@ programs under Linux.
 
 Put images into the `testsuite` folder and display all of them by starting
 the test program with `-t`.
+
+Or try the command line options for creating tiles, desaturate and color average.
+
+Change the speed live using `+` and `-' keys.
+
+Look at the minimal example program `simple.cxx` to get a quick idea how to
+use the class.
+
+## Resume
+
+I am not entirely convinced by the concept of `Solution 2` after all, but it is
+not bad either. On the one hand is _cute_ to use it as a `Fl_Image`, on the other
+hand exactly therefore it seems inappropriate to put more and more playing
+functionality into it.
+
+Perhaps a generic `Fl_Animation` class (or whatever it may be called)
+would make sense - and _one_ constructor for such a class could be an
+`Fl_Animated_GIF_Image` (which would then not be needed to rum the animation, just
+supply the data). Or something like that.
