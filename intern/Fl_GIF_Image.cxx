@@ -535,8 +535,7 @@ static void dispose(RGB_Image &new_data, FrameInfo *_fi) {
 
 Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
                                      Fl_Widget *canvas_/* = 0*/,
-                                     bool start_ /* = false*/,
-                                     bool debug_/* = false*/) :
+                                     unsigned short flags_/* = SetAsImage */) :
   Inherited(name_, 1),
   _name(strdup(name_)),
   _canvas(canvas_),
@@ -545,7 +544,7 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
   _frame(-1),
   _speed(1),
   _fi(new FrameInfo()) {
-  _fi->debug = debug_;
+  _fi->debug = (flags_ & Debug);
   load(name_);
   if (canvas_w() && canvas_h()) {
     if (!w() && !h()) {
@@ -553,11 +552,8 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
       h(canvas_h());
     }
   }
-  if (canvas()) {
-    canvas()->size(w(), h());
-    canvas()->image(this); // set animation as image() of canvas
-  }
-  if (start_)
+  canvas(canvas_, flags_);
+  if ((flags_ & Start))
     start();
 }
 
@@ -818,12 +814,14 @@ Fl_Widget *Fl_Anim_GIF_Image::canvas() const {
   return _canvas;
 }
 
-void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, bool set_image_/* = true*/) {
+void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, unsigned short flags_/* = SetAsImage*/) {
   if (_canvas)
     _canvas->image(0);
   _canvas = canvas_;
-  if (_canvas && set_image_)
-    _canvas->image(this);
+  if (_canvas && !(flags_ & DontSetAsImage))
+    _canvas->image(this); // set animation as image() of canvas
+  if (_canvas && !(flags_ & DontResizeCanvas))
+    _canvas->size(w(), h());
   _frame = -1;
   if (Fl::has_timeout(cb_animate, this)) {
     Fl::remove_timeout(cb_animate, this);

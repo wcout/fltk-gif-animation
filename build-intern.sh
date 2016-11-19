@@ -1,9 +1,10 @@
 #!/bin/sh
 
 # put the path to your FLTK repository here
-fltk=../fltk-1.4
+fltk=../fltk-1.3
 
 target=animgifimage
+target1=simple
 src=intern
 #opt=-pg
 
@@ -21,3 +22,5 @@ fi
 
 # build the testprogram
 g++ -Wall -pipe -pedantic -O3 $opt -o $target `$fltk/fltk-config --use-images --cxxflags` $src/$target.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt
+
+g++ -Wall -pipe -pedantic -O3 $opt -o $target1 `$fltk/fltk-config --use-images --cxxflags` $src/$target1.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt

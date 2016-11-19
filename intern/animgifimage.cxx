@@ -9,6 +9,7 @@
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl_Tiled_Image.H>
 
+
 //#define BACKGROUND FL_RED	// use this to see transparent parts better
 #define BACKGROUND FL_GRAY
 //#define BACKGROUND FL_BLACK
@@ -54,7 +55,7 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
     win->callback(quit_cb);
   printf("\nLoading '%s'%s\n", name_, uncache ? " (uncached)" : "");
   Fl_Box *canvas = test_tiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas for animation
-  Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, false, debug);
+  Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, (debug ? Fl_Anim_GIF_Image::Debug : 0));
   animgif->uncache(uncache);
   if (resizable) // note: bug in FLTK (STR 3352) - test resize functionality here
     animgif->resize(0.7); // hardcoded for now!
@@ -73,7 +74,7 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
       Fl_Group *group = new Fl_Group(0, 0, win->w(), win->h());
       group->image(tiled_image);
       group->align(FL_ALIGN_INSIDE);
-      animgif->canvas(group, false);
+      animgif->canvas(group, Fl_Anim_GIF_Image::DontResizeCanvas | Fl_Anim_GIF_Image::DontSetAsImage );
       win->resizable(group);
     } else {
       // demonstrate a way how to use same animation in another canvas simultaneously:

@@ -21,7 +21,13 @@ class Fl_Widget;
 class Fl_Anim_GIF_Image : public Fl_GIF_Image {
   typedef Fl_GIF_Image Inherited;
 public:
-  Fl_Anim_GIF_Image(const char *name_, Fl_Widget *canvas_ = 0, bool start_ = false, bool debug_ = false);
+  enum Flags {
+    Start = 1,
+    Debug = 2,
+    DontResizeCanvas = 4,
+    DontSetAsImage = 8
+  };
+  Fl_Anim_GIF_Image(const char *name_, Fl_Widget *canvas_ = 0, unsigned short flags_ = 0);
   virtual ~Fl_Anim_GIF_Image();
   virtual void color_average(Fl_Color c_, float i_);
   virtual Fl_Image *copy(int W_, int H_);
@@ -36,7 +42,7 @@ public:
   Fl_Image *image() const;
   Fl_Image *image(int frame_) const;
   const char *name() const;
-  void canvas(Fl_Widget *canvas_, bool set_as_image = true);
+  void canvas(Fl_Widget *canvas_, unsigned short flags_ = 0);
   Fl_Widget *canvas() const;
   bool start();
   double speed() const;
