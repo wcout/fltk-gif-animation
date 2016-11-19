@@ -172,7 +172,7 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
   close_gif_file();
   GifFileType *gifFileIn;
   int errorCode;
-  if ((gifFileIn = DGifOpenFileName(infname, &errorCode)) == NULL) {
+  if (!infname || (gifFileIn = DGifOpenFileName(infname, &errorCode)) == NULL) {
     Fl::error("Fl_GIF_Image: Unable to open %s!", infname);
     ld(ERR_FILE_ACCESS);
     return false;
@@ -537,7 +537,7 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
                                      Fl_Widget *canvas_/* = 0*/,
                                      unsigned short flags_/* = SetAsImage */) :
   Inherited(name_, 1),
-  _name(strdup(name_)),
+  _name(name_ ? strdup(name_) : 0),
   _canvas(canvas_),
   _uncache(false),
   _valid(false),
