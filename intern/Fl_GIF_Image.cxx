@@ -544,6 +544,9 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
   _frame(-1),
   _speed(1),
   _fi(new FrameInfo()) {
+  if (w() <= 0 || h() <= 0) {
+    return; // failed to load in base class
+  }
   _fi->debug = (flags_ & Debug);
   load(name_);
   if (canvas_w() && canvas_h()) {
