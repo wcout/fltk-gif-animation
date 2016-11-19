@@ -121,26 +121,24 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
   return true;
 }
 
-#include <sys/types.h>
-#include <dirent.h>
+#include <FL/filename.H>
 bool openDirectory(const char *dir_, char *flags_) {
-  DIR *dir = opendir(dir_);
-  if (!dir)
+  dirent **list;
+  int nbr_of_files = fl_filename_list(dir_, &list, fl_alphasort);
+  if (nbr_of_files <= 0)
     return false;
   int cnt = 0;
-  struct dirent *entry;
-  while ((entry = readdir(dir))) {
+  for (int i = 0; i < nbr_of_files; i++) {
     char buf[512];
-    const char *name = entry->d_name;
+    const char *name = list[i]->d_name;
     if (!strcmp(name, ".") || !strcmp(name, "..")) continue;
     if (!strstr(name, ".gif") && !strstr(name, ".GIF")) continue;
-    sprintf(buf, "%s/%s", dir_, name);
+    snprintf(buf, sizeof(buf), "%s/%s", dir_, name);
     if (strstr(name, "debug"))	// when name contains 'debug' open single frames
       strcat(flags_, "d");
     if (openFile(buf, flags_, cnt == 0))
       cnt++;
   }
-  closedir(dir);
   return cnt != 0;
 }
 
