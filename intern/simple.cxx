@@ -22,12 +22,12 @@ int main(int argc_, char *argv_[]) {
   // create/load the animated gif and start it immediately.
   // We use the 'DontResizeCanvas' flag here to tell the
   // animation not to change the canvas size (which is the default).
-  Fl_Anim_GIF_Image animgif(/*name_=*/argv_[1],
-                                      /*canvas_=*/&canvas,
-                                      /*flags_=*/Fl_Anim_GIF_Image::Start |
-                                      Fl_Anim_GIF_Image::DontResizeCanvas);
+  Fl_Anim_GIF_Image animgif(  /*name_=*/ argv_[1],
+                            /*canvas_=*/ &canvas,
+                             /*flags_=*/ Fl_Anim_GIF_Image::Start |
+                                         Fl_Anim_GIF_Image::DontResizeCanvas);
 
-  // check if it suceeded
+  // check if loading succeeded
   printf("valid: %d frames: %d\n", animgif.valid(), animgif.frames());
   if (animgif.valid())
     return Fl::run();
