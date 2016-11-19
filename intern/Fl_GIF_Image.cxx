@@ -535,7 +535,7 @@ static void dispose(RGB_Image &new_data, FrameInfo *_fi) {
 
 Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
                                      Fl_Widget *canvas_/* = 0*/,
-                                     unsigned short flags_/* = SetAsImage */) :
+                                     unsigned short flags_/* = 0 */) :
   Inherited(name_, 1),
   _name(name_ ? strdup(name_) : 0),
   _canvas(canvas_),
@@ -817,7 +817,7 @@ Fl_Widget *Fl_Anim_GIF_Image::canvas() const {
   return _canvas;
 }
 
-void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, unsigned short flags_/* = SetAsImage*/) {
+void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, unsigned short flags_/* = 0*/) {
   if (_canvas)
     _canvas->image(0);
   _canvas = canvas_;
