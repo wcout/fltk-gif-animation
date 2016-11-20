@@ -4,15 +4,15 @@
 fltk=../fltk-1.4
 
 target=animgifimage
-target1=simple
+target1=animgifimage-simple
 src=intern
 #opt=-pg
 
 # copy files into FLTK repo & compile FLTK
 if [ "$1" = "all" ]; then
-	cp -av $src/fl_*.H $fltk/src/.
-	cp -av $src/*GIF*.H $fltk/FL/.
-	cp -av $src/*GIF*.cxx $fltk/src/.
+	cp -av $src/FL/*.H $fltk/FL/.
+	cp -av $src/src/*.cxx $fltk/src/.
+	cp -av $src/src/*.H $fltk/src/.
 
 	cwd=$(pwd)
 	cd $fltk
@@ -21,6 +21,6 @@ if [ "$1" = "all" ]; then
 fi
 
 # build the testprogram
-g++ -Wall -pipe -pedantic -O3 $opt -o $target `$fltk/fltk-config --use-images --cxxflags` $src/$target.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt
+g++ -Wall -pipe -pedantic -O3 $opt -o $target `$fltk/fltk-config --use-images --cxxflags` $src/test/$target.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt
 
-g++ -Wall -pipe -pedantic -O3 $opt -o $target1 `$fltk/fltk-config --use-images --cxxflags` $src/$target1.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt
+g++ -Wall -pipe -pedantic -O3 $opt -o $target1 `$fltk/fltk-config --use-images --cxxflags` $src/test/$target1.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt

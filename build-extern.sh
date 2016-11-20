@@ -3,7 +3,7 @@
 # put the path to your FLTK repository here
 fltk=../fltk-1.3
 
-target=gif_animation
+target=animgif
 src=extern
 #opt=-pg
 

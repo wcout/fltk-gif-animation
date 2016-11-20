@@ -22,7 +22,7 @@ static void quit_cb(Fl_Widget* w_, void*) {
 
 static void set_title(Fl_Window *win_, Fl_Anim_GIF_Image *animgif_) {
   char buf[200];
-  sprintf(buf, "%s (%d frames)  %2.2fx", fl_filename_name(animgif_->name()),
+  snprintf(buf, sizeof(buf), "%s (%d frames)  %2.2fx", fl_filename_name(animgif_->name()),
           animgif_->frames(), animgif_->speed());
   if (animgif_->uncache())
     strcat(buf, " U");
@@ -107,7 +107,7 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
   if (debug) {
     for (int i = 0; i < animgif->frames(); i++) {
       char buf[200];
-      sprintf(buf, "Frame #%d", i + 1);
+      snprintf(buf, sizeof(buf), "Frame #%d", i + 1);
       Fl_Double_Window *win = new Fl_Double_Window(animgif->w(), animgif->h());
       win->copy_tooltip(buf);
       win->copy_label(buf);
@@ -134,7 +134,7 @@ bool openDirectory(const char *dir_, char *flags_) {
     if (!strcmp(name, ".") || !strcmp(name, "..")) continue;
     if (!strstr(name, ".gif") && !strstr(name, ".GIF")) continue;
     snprintf(buf, sizeof(buf), "%s/%s", dir_, name);
-    if (strstr(name, "debug"))	// when name contains 'debug' open single frames
+    if (strstr(name, "debug"))	// hack: when name contains 'debug' open single frames
       strcat(flags_, "d");
     if (openFile(buf, flags_, cnt == 0))
       cnt++;
@@ -146,7 +146,7 @@ static void change_speed(bool up_) {
   Fl_Widget *below = Fl::belowmouse();
   if (below && below->image()) {
     Fl_Anim_GIF_Image *animgif = 0;
-    // is there another way to determine Fl_Tiled_Image?
+    // is there a way without dynamic cast to determine Fl_Tiled_Image?
     Fl_Tiled_Image *tiled = dynamic_cast<Fl_Tiled_Image *>(below->image());
     animgif = tiled ?
               dynamic_cast<Fl_Anim_GIF_Image *>(tiled->image()) :

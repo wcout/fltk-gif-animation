@@ -91,7 +91,7 @@ Or try the command line options for creating tiles, desaturate and color average
 
 Change the speed live using `+` and `-` keys.
 
-Look at the minimal example program `simple.cxx` to get a quick idea how to
+Look at the minimal example program `animgifimage-simple.cxx` to get a quick idea how to
 use the class.
 
 ## Resume
