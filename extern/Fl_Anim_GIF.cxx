@@ -140,7 +140,7 @@ static void setToBackGround(RGB_Image &img_, FrameInfo *_fi) {
   if (tp >= 0)
     color = _fi->frames_size ?_fi->frames[ _fi->frames_size - 1].transparent_color :
             _fi->frame.transparent_color;
-  if (tp >= 0 && bg >= 0)	// TrueColor/bier/...
+  if (tp >= 0 && bg >= 0)
     bg = tp;
   color.alpha = tp == bg ? RGB_Image::T_FULL : RGB_Image::T_NONE;
   DEBUG(("  setToColor %d/%d/%d alpha=%d\n", color.r, color.g, color.b, color.alpha));

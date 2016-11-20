@@ -50,24 +50,23 @@ bool openFile(const char *name_, bool debug_, bool close_ = false) {
   return true;
 }
 
-#include <sys/types.h>
-#include <dirent.h>
+#include <FL/filename.H>
 bool openTestSuite(const char *dir_) {
-  DIR *dir = opendir(dir_);
-  if (!dir)
+  dirent **list;
+  int nbr_of_files = fl_filename_list(dir_, &list, fl_alphasort);
+  if (nbr_of_files <= 0)
     return false;
   int cnt = 0;
-  struct dirent *entry;
-  while ((entry = readdir(dir))) {
+  for (int i = 0; i < nbr_of_files; i++) {
     char buf[512];
-    const char *name = entry->d_name;
+    const char *name = list[i]->d_name;
     if (!strcmp(name, ".") || !strcmp(name, "..")) continue;
-    sprintf(buf, "%s/%s", dir_, name);
-    bool debug = strstr(name, "debug");	// when name contains 'debug' open single frames
+    if (!strstr(name, ".gif") && !strstr(name, ".GIF")) continue;
+    snprintf(buf, sizeof(buf), "%s/%s", dir_, name);
+    bool debug = strstr(name, "debug");	// hack: when name contains 'debug' open single frames
     if (openFile(buf, debug, cnt == 0))
       cnt++;
   }
-  closedir(dir);
   return cnt != 0;
 }
 
@@ -75,7 +74,7 @@ int main(int argc_, char *argv_[]) {
   fl_register_images();
   if (argc_ > 1) {
     if (!strcmp(argv_[1], "-t"))
-      openTestSuite("testsuite");
+      openTestSuite(argc_ > 2 ? argv_[2] : "testsuite");
     else {
       bool debug = false;
       for (int i = 1; i < argc_; i++)
