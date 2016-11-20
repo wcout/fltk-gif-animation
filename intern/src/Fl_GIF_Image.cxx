@@ -310,7 +310,7 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
 
   if (anim) {
     // free temporary raster data
-    delete Image;
+    delete[] Image;
     // store file handle
     gif_handle = gifFileIn;
   } else
