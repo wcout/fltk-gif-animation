@@ -9,12 +9,9 @@
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl_Tiled_Image.H>
 
-
-//#define BACKGROUND FL_RED	// use this to see transparent parts better
-#define BACKGROUND FL_GRAY
-//#define BACKGROUND FL_BLACK
-
-static const double RedrawDelay = 1./50;
+static const Fl_Color BackGroundColor = FL_GRAY; // use e.g. FL_RED to see
+                                                 // transparent parts better
+static const double RedrawDelay = 1./50;         // interval [sec] for forced redraw
 
 static void quit_cb(Fl_Widget* w_, void*) {
   exit(0);
@@ -50,7 +47,7 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
   bool resizable = !test_tiles && strchr(flags_, 'r');
   Fl::remove_timeout(cb_forced_redraw);
   Fl_Double_Window *win = new Fl_Double_Window(100, 100);
-  win->color(BACKGROUND);
+  win->color(BackGroundColor);
   if (close_)
     win->callback(quit_cb);
   printf("\nLoading '%s'%s\n", name_, uncache ? " (uncached)" : "");
@@ -111,7 +108,7 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
       Fl_Double_Window *win = new Fl_Double_Window(animgif->w(), animgif->h());
       win->copy_tooltip(buf);
       win->copy_label(buf);
-      win->color(BACKGROUND);
+      win->color(BackGroundColor);
       Fl_Box *b = new Fl_Box(0, 0, win->w(), win->h());
       b->image(animgif->image(i));
       win->end();
