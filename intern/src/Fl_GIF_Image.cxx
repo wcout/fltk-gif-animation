@@ -396,6 +396,7 @@ struct FrameInfo {
   FrameInfo() :
     frames_size(0),
     frames(0),
+    loop_count(1),
     background_color_index(-1),
     canvas_w(0),
     canvas_h(0),
@@ -405,6 +406,7 @@ struct FrameInfo {
     debug(false) {}
   int frames_size;                         // number of frames stored in 'frames'
   GifFrame *frames;                        // "vector" for frames
+  int loop_count;
   int background_color_index;              // needed for dispose()
   RGBA_Color background_color;  // needed for dispose()
   GifFrame frame;                          // current processed frame
@@ -423,9 +425,9 @@ struct FrameInfo {
 #define DEBUG(x) if ( _fi->debug ) printf x
 //#define DEBUG(x)
 
-static double convertDelay(int d_) {
+static double convertDelay(FrameInfo *fi_, int d_) {
   if (d_ <= 0)
-    d_ = 10;
+    d_ = fi_->loop_count != 1 ? 10 : 0;
   return (double)d_ / 100;
 }
 
@@ -653,15 +655,24 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
     int e = image->ExtensionBlockCount;
     while (e--) {
       ExtensionBlock *ext = &image->ExtensionBlocks[ e ];
-      if (ext->Function == GRAPHICS_EXT_FUNC_CODE) {
+      if (_frame < 0 && ext->Function == APPLICATION_EXT_FUNC_CODE &&
+          ext->ByteCount >= 11 && memcmp(ext->Bytes, "NETSCAPE2.0", 11) == 0) {
+        ExtensionBlock *subext = &image->ExtensionBlocks[ e + 1 ];
+        if (subext->ByteCount >= 3) {
+          unsigned char *params = subext->Bytes;
+          _fi->loop_count = params[1] | (params[2] << 8);
+          DEBUG(("netscape loop count: %u\n", _fi->loop_count));
+        }
+      }
+      else if (ext->Function == GRAPHICS_EXT_FUNC_CODE) {
         DGifExtensionToGCB(ext->ByteCount, ext->Bytes, &gcb);
         DEBUG(("#%d %d/%d %dx%d delay: %d, dispose: %d transparent_color: %d\n",
                (int)_fi->frames_size + 1,
                frame.x, frame.y, frame.w, frame.h,
                gcb.DelayTime, gcb.DisposalMode, gcb.TransparentColor));
-        frame.delay = convertDelay(gcb.DelayTime);
         frame.dispose = gcb.DisposalMode;
-        break;
+        if (_frame >= 0)
+          break;
       }
     }
     if (!ColorMap) {
@@ -670,6 +681,7 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
       close_gif_file();
       return false;
     }
+    frame.delay = convertDelay(_fi, gcb.DelayTime);
     // we know now everything we need about the frame
     frame.transparent_color_index = gcb.TransparentColor;
     if (frame.transparent_color_index >= 0)
