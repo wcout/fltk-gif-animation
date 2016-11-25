@@ -6,6 +6,7 @@
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl.H>
+#include <FL/fl_draw.H>
 #include <cstdio>
 
 Fl_Anim_GIF_Image *orig = 0;
@@ -15,6 +16,17 @@ class Canvas : public Fl_Box {
 public:
   Canvas(int x_, int y_, int w_, int h_) :
     Inherited(x_, y_, w_, h_) {}
+  virtual void draw() {
+    static const Fl_Color C1 = FL_WHITE;
+    static const Fl_Color C2 = FL_GRAY;
+    for (int y = 0; y < h(); y += 32) {
+      for (int x = 0; x < w(); x += 32) {
+        fl_color(x%64 ? y%64 ? C1 : C2 : y%64 ? C2 : C1);
+        fl_rectf(x, y, 32, 32);
+      }
+    }
+    Inherited::draw();
+  }
   void do_resize(int W_, int H_) {
     if (image() && (image()->w() != W_ || image()->h() != H_)) {
       Fl_Anim_GIF_Image *animgif = (Fl_Anim_GIF_Image *)image();
@@ -55,8 +67,8 @@ int main(int argc_, char *argv_[]) {
   // We use the 'DontResizeCanvas' flag here to tell the
   // animation not to change the canvas size (which is the default).
   orig = new Fl_Anim_GIF_Image(/*name_=*/ argv_[1],
-                             /*canvas_=*/ &canvas,
-                              /*flags_=*/ Fl_Anim_GIF_Image::Start |
+                                          /*canvas_=*/ &canvas,
+                                          /*flags_=*/ Fl_Anim_GIF_Image::Start |
                                           Fl_Anim_GIF_Image::DontResizeCanvas);
 
   // set initial size to fit into window
