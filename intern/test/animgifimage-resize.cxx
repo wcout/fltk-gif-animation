@@ -55,8 +55,8 @@ int main(int argc_, char *argv_[]) {
   // We use the 'DontResizeCanvas' flag here to tell the
   // animation not to change the canvas size (which is the default).
   orig = new Fl_Anim_GIF_Image(/*name_=*/ argv_[1],
-                                          /*canvas_=*/ &canvas,
-                                          /*flags_=*/ Fl_Anim_GIF_Image::Start |
+                             /*canvas_=*/ &canvas,
+                              /*flags_=*/ Fl_Anim_GIF_Image::Start |
                                           Fl_Anim_GIF_Image::DontResizeCanvas);
 
   // set initial size to fit into window
