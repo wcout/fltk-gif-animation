@@ -15,13 +15,12 @@ class Canvas : public Fl_Box {
 public:
   Canvas(int x_, int y_, int w_, int h_) :
     Inherited(x_, y_, w_, h_) {}
-  virtual void resize(int x_, int y_, int w_, int h_) {
-    Inherited::resize(x_, y_, w_, h_);
-    if (image()) {
+  void do_resize(int W_, int H_) {
+    if (image() && (image()->w() != W_ || image()->h() != H_)) {
       Fl_Anim_GIF_Image *animgif = (Fl_Anim_GIF_Image *)image();
       image(0);
 //      Fl_RGB_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR); // very slow!!
-      Fl_Anim_GIF_Image *copied = (Fl_Anim_GIF_Image *)orig->copy(w_, h_);
+      Fl_Anim_GIF_Image *copied = (Fl_Anim_GIF_Image *)orig->copy(W_, H_);
       animgif->canvas(0);
       animgif->stop();
       copied->canvas(this, Fl_Anim_GIF_Image::Start |
@@ -29,6 +28,15 @@ public:
       copied->start();
       printf("resized to %d x %d\n", copied->w(), copied->h());
     }
+  }
+  static void do_resize_cb(void *d_) {
+    Canvas *c = (Canvas *)d_;
+    c->do_resize(c->w(), c->h());
+  }
+  virtual void resize(int x_, int y_, int w_, int h_) {
+    Inherited::resize(x_, y_, w_, h_);
+    Fl::remove_timeout(do_resize_cb, this);
+    Fl::add_timeout(0.1, do_resize_cb, this);
   }
 };
 
@@ -47,9 +55,9 @@ int main(int argc_, char *argv_[]) {
   // We use the 'DontResizeCanvas' flag here to tell the
   // animation not to change the canvas size (which is the default).
   orig = new Fl_Anim_GIF_Image(/*name_=*/ argv_[1],
-      /*canvas_=*/ &canvas,
-      /*flags_=*/ Fl_Anim_GIF_Image::Start |
-      Fl_Anim_GIF_Image::DontResizeCanvas);
+                                          /*canvas_=*/ &canvas,
+                                          /*flags_=*/ Fl_Anim_GIF_Image::Start |
+                                          Fl_Anim_GIF_Image::DontResizeCanvas);
 
   // set initial size to fit into window
   canvas.resize(0, 0, win.w(), win.h());
