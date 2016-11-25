@@ -444,13 +444,14 @@ static void draw(Fl_RGB_Image &rgb_, uchar *offscreen_) {
 }
 #endif
 
-static void setToBackGround(uchar *offscreen_, int frame, FrameInfo *_fi) {
+// reset offscreen to background color
+static void setToBackGround(uchar *offscreen_, int frame_, FrameInfo *_fi) {
   int bg = _fi->background_color_index;
-  int tp = _fi->frames[ frame ].transparent_color_index;
-  DEBUG(("setToBackGround [%d] tp = %d, bg = %d\n", frame, tp, bg));
+  int tp = _fi->frames[frame_].transparent_color_index;
+  DEBUG(("setToBackGround [%d] tp = %d, bg = %d\n", frame_, tp, bg));
   RGBA_Color color = _fi->background_color;
   if (tp >= 0)
-    color = _fi->frames[ frame].transparent_color;
+    color = _fi->frames[frame_].transparent_color;
   if (tp >= 0 && bg >= 0)
     bg = tp;
   color.alpha = tp == bg ? T_FULL : T_NONE;
@@ -459,27 +460,27 @@ static void setToBackGround(uchar *offscreen_, int frame, FrameInfo *_fi) {
     memcpy(p, &color, 4);
 }
 
-static void dispose(int frame, FrameInfo *_fi, uchar *offscreen_) {
-//  int frame = _fi->frames_size - 1;
-  if (frame < 0) {
+// dispose frame with index 'frame_' to offscreen buffer
+static void dispose(int frame_, FrameInfo *_fi, uchar *offscreen_) {
+  if (frame_ < 0) {
     return;
   }
-  switch (_fi->frames[frame].dispose) {
+  switch (_fi->frames[frame_].dispose) {
     case DISPOSE_PREVIOUS: {
-        while (frame > 0 && _fi->frames[frame].dispose == DISPOSE_PREVIOUS)
-          frame--;
-        DEBUG(("     dispose frame %d to previous\n", frame + 1));
-//        if (frame)
-//          frame--;
-        Fl_RGB_Image *old_data = _fi->frames[frame].rgb;
+        // dispose to previous restores to first not DISPOSE_TO_PREVIOUS frame
+        while (frame_ > 0 && _fi->frames[frame_].dispose == DISPOSE_PREVIOUS)
+          frame_--;
+        DEBUG(("     dispose frame %d to previous\n", frame_ + 1));
+        // copy the image data..
+        Fl_RGB_Image *old_data = _fi->frames[frame_].rgb;
         uchar *dst = offscreen_;
         const char *src = old_data->data()[0];
         memcpy((char *)dst, (char *)src, _fi->canvas_w * _fi->canvas_h * 4);
         break;
       }
     case DISPOSE_BACKGROUND:
-      DEBUG(("     dispose frame %d to background\n", frame + 1));
-      setToBackGround(offscreen_, frame, _fi);
+      DEBUG(("     dispose frame %d to background\n", frame_ + 1));
+      setToBackGround(offscreen_, frame_, _fi);
       break;
 
     default: {
