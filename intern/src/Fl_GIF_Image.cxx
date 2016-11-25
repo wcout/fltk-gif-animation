@@ -354,71 +354,16 @@ void *Fl_GIF_Image::read_next_image() {
 //
 
 namespace {
-class RGB_Image : public Fl_RGB_Image {
-  typedef Fl_RGB_Image Inherited;
-public:
-  enum Transparency {
-    T_NONE = 0xff,
-    T_FULL = 0
-  };
-  struct RGBA_Color {
-    uchar r, g, b, alpha;
-    RGBA_Color(uchar r_ = 0, uchar g_ = 0, uchar b_ = 0, uchar a_ = T_NONE) :
-      r(r_), g(g_), b(b_), alpha(a_) {}
-  };
-  RGB_Image(Fl_Pixmap *pixmap_) :
-    Inherited(pixmap_) {}
-  RGB_Image(uchar *bits_, int w_, int h_, int d_) :
-    Inherited(bits_, w_, h_, d_) {}
-  bool isTransparent(int x_, int y_) const;
-  RGBA_Color getPixel(int x_, int y_) const;
-  void setPixel(int x_, int y_, const RGBA_Color& color_, bool alpha_ = false) const;
-  void setToColor(const RGBA_Color c_, bool alpha_ = false) const;
-  void setToColor(int x_, int y_, int w_, int h_, const RGBA_Color &c_, bool alpha_ = false) const;
+enum Transparency {
+  T_NONE = 0xff,
+  T_FULL = 0
 };
 
-bool RGB_Image::isTransparent(int x_, int y_) const {
-  const char *buf = data()[0];
-  long index = (y_ * w() * d() + (x_ * d()));
-  uchar alpha = d() == 4 ? *(buf + index + 3) : T_NONE;
-  return alpha == T_FULL;
-}
-
-RGB_Image::RGBA_Color RGB_Image::getPixel(int x_, int y_) const {
-  RGBA_Color color;
-  const char *buf = data()[0];
-  buf += (y_ * w() * d() + (x_ * d()));
-  color.r = *buf++;
-  color.g = *buf++;
-  color.b = *buf++;
-  color.alpha = d() == 4 ? *buf : T_NONE;
-  return color;
-}
-
-void RGB_Image::setPixel(int x_, int y_, const RGBA_Color& color_, bool alpha_/* = false*/) const {
-  char *buf = (char *)data()[0];
-  buf += (y_ * w() * d() + (x_ * d()));
-  *buf++ = color_.r;
-  *buf++ = color_.g;
-  *buf++ = color_.b;
-  if (d() == 4 && alpha_)
-    *buf = color_.alpha;
-}
-
-void RGB_Image::setToColor(int x_, int y_, int w_, int h_,
-                           const RGBA_Color &c_, bool alpha_/* = false*/) const {
-  for (int y = y_; y < y_ + h_; y++) {
-    if (y >= h()) break;
-    for (int x = x_; x < x_ + w_; x++) {
-      if (x >= w()) continue;
-      setPixel(x, y, c_, alpha_);
-    }
-  }
-}
-
-void RGB_Image::setToColor(const RGBA_Color c_, bool alpha_/* = false*/) const {
-  setToColor(0, 0, w(), h(), c_, alpha_);
-}
+struct RGBA_Color {
+  uchar r, g, b, alpha;
+  RGBA_Color(uchar r_ = 0, uchar g_ = 0, uchar b_ = 0, uchar a_ = T_NONE) :
+    r(r_), g(g_), b(b_), alpha(a_) {}
+};
 }
 
 struct GifFrame {
@@ -435,7 +380,7 @@ struct GifFrame {
     dispose(0),
     transparent(false),
     transparent_color_index(-1) {}
-  RGB_Image *rgb;                          // full frame image
+  Fl_RGB_Image *rgb;                       // full frame image
   Fl_Color average_color;                  // last average color
   float average_weight;                    // last average weight
   bool desaturated;                        // flag if frame is desaturated
@@ -444,7 +389,7 @@ struct GifFrame {
   int dispose;                             // disposal method
   bool transparent;                        // background color is transparent color
   int transparent_color_index;             // needed for dispose()
-  RGB_Image::RGBA_Color transparent_color; // needed for dispose()
+  RGBA_Color transparent_color;            // needed for dispose()
 };
 
 struct FrameInfo {
@@ -461,7 +406,7 @@ struct FrameInfo {
   int frames_size;                         // number of frames stored in 'frames'
   GifFrame *frames;                        // "vector" for frames
   int background_color_index;              // needed for dispose()
-  RGB_Image::RGBA_Color background_color;  // needed for dispose()
+  RGBA_Color background_color;  // needed for dispose()
   GifFrame frame;                          // current processed frame
   int canvas_w;                            // width of GIF from header
   int canvas_h;                            // height of GIF from header
@@ -469,6 +414,7 @@ struct FrameInfo {
   Fl_Color average_color;                  // color for color_average()
   float average_weight;                    // weight for color_average (negative: none)
   bool debug;                              // Flag for debug outputs
+  uchar *offscreen;
 };
 
 #include <FL/Fl.H>			// for Fl::add_timeout()
@@ -483,26 +429,37 @@ static double convertDelay(int d_) {
   return (double)d_ / 100;
 }
 
-static void setToBackGround(RGB_Image &img_, FrameInfo *_fi) {
+#if 0
+// draw a transparent rgb image into the offscreen
+static void draw(Fl_RGB_Image &rgb_, uchar *offscreen_) {
+  const char *src = rgb_.data()[0];
+  const char *end = src + rgb_.w() * rgb_.h() * 4;
+  while (end > src) {
+    end -= 4;
+    if (end[3] == T_FULL) continue;
+    memcpy(&offscreen_[end - src], end, 4);
+  }
+}
+#endif
+
+static void setToBackGround(uchar *offscreen_, int frame, FrameInfo *_fi) {
   int bg = _fi->background_color_index;
-  int tp = _fi->frames_size ? _fi->frames[ _fi->frames_size - 1].transparent_color_index :
-           _fi->frame.transparent_color_index;
-  DEBUG(("setToBackGround [%d] tp = %d, bg = %d\n", _fi->frames_size, tp, bg));
-  RGB_Image::RGBA_Color color = _fi->background_color;
+  int tp = _fi->frames[ frame ].transparent_color_index;
+  DEBUG(("setToBackGround [%d] tp = %d, bg = %d\n", frame, tp, bg));
+  RGBA_Color color = _fi->background_color;
   if (tp >= 0)
-    color = _fi->frames_size ?_fi->frames[ _fi->frames_size - 1].transparent_color :
-            _fi->frame.transparent_color;
+    color = _fi->frames[ frame].transparent_color;
   if (tp >= 0 && bg >= 0)
     bg = tp;
-  color.alpha = tp == bg ? RGB_Image::T_FULL : RGB_Image::T_NONE;
+  color.alpha = tp == bg ? T_FULL : T_NONE;
   DEBUG(("  setToColor %d/%d/%d alpha=%d\n", color.r, color.g, color.b, color.alpha));
-  img_.setToColor(color, true);
+  for (uchar *p = offscreen_ + _fi->canvas_w * _fi->canvas_h * 4 - 4; p >= offscreen_; p -= 4)
+    memcpy(p, &color, 4);
 }
 
-static void dispose(RGB_Image &new_data, FrameInfo *_fi) {
-  int frame = _fi->frames_size - 1;
+static void dispose(int frame, FrameInfo *_fi, uchar *offscreen_) {
+//  int frame = _fi->frames_size - 1;
   if (frame < 0) {
-    setToBackGround(new_data, _fi);
     return;
   }
   switch (_fi->frames[frame].dispose) {
@@ -510,24 +467,21 @@ static void dispose(RGB_Image &new_data, FrameInfo *_fi) {
         while (frame > 0 && _fi->frames[frame].dispose == DISPOSE_PREVIOUS)
           frame--;
         DEBUG(("     dispose frame %d to previous\n", frame + 1));
-        if (frame)
-          frame--;
-        RGB_Image *old_data = _fi->frames[frame].rgb;
-        const char *dst = new_data.data()[0];
+//        if (frame)
+//          frame--;
+        Fl_RGB_Image *old_data = _fi->frames[frame].rgb;
+        uchar *dst = offscreen_;
         const char *src = old_data->data()[0];
         memcpy((char *)dst, (char *)src, _fi->canvas_w * _fi->canvas_h * 4);
         break;
       }
     case DISPOSE_BACKGROUND:
       DEBUG(("     dispose frame %d to background\n", frame + 1));
-      setToBackGround(new_data, _fi);
+      setToBackGround(offscreen_, frame, _fi);
       break;
 
     default: {
-        RGB_Image *old_data = _fi->frames[frame].rgb;
-        const char *dst = new_data.data()[0];
-        const char *src = old_data->data()[0];
-        memcpy((char *)dst, (char *)src, _fi->canvas_w * _fi->canvas_h * 4);
+        // nothing to do (keep everything as is)
         break;
       }
   }
@@ -564,6 +518,7 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
 Fl_Anim_GIF_Image::~Fl_Anim_GIF_Image() {
   Fl::remove_timeout(cb_animate, this);
   clear_frames();
+  delete _fi->offscreen;
   delete _fi;
   free(_name);
 }
@@ -621,7 +576,6 @@ bool Fl_Anim_GIF_Image::next_frame() {
     _fi->frames[_frame].rgb->desaturate();
     _fi->frames[_frame].desaturated = true;
   }
-
   if (canvas()) {
     if ((last_frame >= 0 && _fi->frames[last_frame].dispose == DISPOSE_BACKGROUND) ||
         _fi->frames[_frame].dispose == DISPOSE_BACKGROUND ||
@@ -670,9 +624,10 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   DEBUG(("%d x %d  BG=%d aspect %d\n", gifFileIn->SWidth, gifFileIn->SHeight, gifFileIn->SBackGroundColor, gifFileIn->AspectByte));
   _fi->canvas_w = gifFileIn->SWidth;
   _fi->canvas_h = gifFileIn->SHeight;
+  _fi->offscreen = (uchar *)calloc(_fi->canvas_w * _fi->canvas_h * 4, 1);
   _fi->background_color_index = gifFileIn->SColorMap ? gifFileIn->SBackGroundColor : -1;
   if (_fi->background_color_index >= 0) {
-    _fi->background_color = RGB_Image::RGBA_Color(
+    _fi->background_color = RGBA_Color(
                               gifFileIn->SColorMap->Colors[_fi->background_color_index].Red,
                               gifFileIn->SColorMap->Colors[_fi->background_color_index].Green,
                               gifFileIn->SColorMap->Colors[_fi->background_color_index].Blue);
@@ -716,49 +671,37 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
       return false;
     }
     // we know now everything we need about the frame
-    int d = 4;
-    uchar *rgb_data = new uchar[ canvas_w() * canvas_h() * d ];
-    RGB_Image *rgb = new RGB_Image(rgb_data, canvas_w(), canvas_h(), d);
-    rgb->alloc_array = 1;
-    frame.rgb = rgb;
     frame.transparent_color_index = gcb.TransparentColor;
     if (frame.transparent_color_index >= 0)
-      frame.transparent_color = RGB_Image::RGBA_Color(
+      frame.transparent_color = RGBA_Color(
                                   ColorMap->Colors[frame.transparent_color_index].Red,
                                   ColorMap->Colors[frame.transparent_color_index].Green,
                                   ColorMap->Colors[frame.transparent_color_index].Blue);
 
     frame.transparent = _fi->background_color_index >= 0 && _fi->background_color_index == gcb.TransparentColor;
 
-    dispose(*rgb, _fi);
+    dispose(_frame, _fi, _fi->offscreen);
 
-    // copy image data to rgb
+    // copy image data to offscreen
     uchar *bits = image->RasterBits;
     for (int y = frame.y; y < frame.y + frame.h; y++) {
       for (int x = frame.x; x < frame.x + frame.w; x++) {
         uchar c = *bits++;
         if (c == gcb.TransparentColor)
           continue;
-        RGB_Image::RGBA_Color color(ColorMap->Colors[c].Red,
-                                    ColorMap->Colors[c].Green,
-                                    ColorMap->Colors[c].Blue,
-                                    RGB_Image::T_NONE);
-        rgb->setPixel(x, y, color, true);
+        uchar *buf = _fi->offscreen;
+        buf += (y * w() * 4 + (x * 4));
+        *buf++ = ColorMap->Colors[c].Red;
+        *buf++ = ColorMap->Colors[c].Green;
+        *buf++ = ColorMap->Colors[c].Blue;
+        *buf = T_NONE;
       }
     }
-
-    // coalesce transparency
-    if (_fi->frames_size && _fi->frames[_fi->frames_size - 1].dispose != DISPOSE_BACKGROUND) {
-      DEBUG(("   coalesce\n"));
-      RGB_Image *prev = _fi->frames[_fi->frames_size - 1].rgb;
-      for (int y = 0; y < canvas_h(); y++) {
-        for (int x = 0; x < canvas_w(); x++) {
-          if (rgb->isTransparent(x, y)) {
-            rgb->setPixel(x, y, prev->getPixel(x, y), true);
-          }
-        }
-      }
-    }
+    // create RGB image from offscreen
+    uchar *buf = new uchar[w() * h() * 4];
+    memcpy(buf, _fi->offscreen, w() * h() * 4);
+    frame.rgb = new Fl_RGB_Image(buf, w(), h(), 4);
+    frame.rgb->alloc_array = 1;
 
     if (!push_back_frame(_fi, &frame)) {
       fprintf(stderr, "Fl_Anim_GIF_Image::load(%s): Out of memory", name_);
@@ -766,13 +709,16 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
       return false;
     }
 
-    // free compressed data
+    // free compressed data to save memory
     free(image->RasterBits);
     image->RasterBits = 0;
     image = (SavedImage *)read_next_image();
+    _frame++;
   }
   close_gif_file();
   _valid = true;
+  _frame = -1;
+  memset(_fi->offscreen, 0, w() * h() * 4);
   return _valid;
 }         // load
 
@@ -877,9 +823,9 @@ Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(int W_, int H_) {
     return *this;
   }
   for (int i=0; i < _fi->frames_size; i++) {
-    RGB_Image *rgb =  _fi->frames[i].rgb;
+    Fl_RGB_Image *rgb =  _fi->frames[i].rgb;
     Fl_RGB_Image *image = (Fl_RGB_Image *)rgb->copy(W_, H_);
-    _fi->frames[i].rgb = new RGB_Image((uchar *)image->array, image->w(), image->h(), image->d());
+    _fi->frames[i].rgb = new Fl_RGB_Image((uchar *)image->array, image->w(), image->h(), image->d());
     image->alloc_array = 0;
     _fi->frames[i].rgb->alloc_array = 1;
     delete image;
