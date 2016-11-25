@@ -168,6 +168,10 @@ Fl_GIF_Image::Fl_GIF_Image(const char *infname, bool anim/*=false*/) : Fl_Pixmap
   load(infname, anim);
 }
 
+Fl_GIF_Image::Fl_GIF_Image() : Fl_Pixmap((char *const*)0),
+  gif_handle(0) {
+}
+
 bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
   close_gif_file();
   GifFileType *gifFileIn;
@@ -403,7 +407,8 @@ struct FrameInfo {
     desaturate(false),
     average_color(FL_BLACK),
     average_weight(-1),
-    debug(false) {}
+    debug(false),
+    offscreen(0) {}
   int frames_size;                         // number of frames stored in 'frames'
   GifFrame *frames;                        // "vector" for frames
   int loop_count;
@@ -517,6 +522,17 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
     start();
 }
 
+Fl_Anim_GIF_Image::Fl_Anim_GIF_Image() :
+  Inherited(),
+  _name(0),
+  _canvas(0),
+  _uncache(false),
+  _valid(false),
+  _frame(-1),
+  _speed(1),
+  _fi(new FrameInfo()) {
+}
+
 /*virtual*/
 Fl_Anim_GIF_Image::~Fl_Anim_GIF_Image() {
   Fl::remove_timeout(cb_animate, this);
@@ -530,6 +546,11 @@ bool Fl_Anim_GIF_Image::start() {
   if (_fi->frames_size) {
     next_frame();
   }
+  return _fi->frames_size != 0;
+}
+
+bool Fl_Anim_GIF_Image::stop() {
+  Fl::remove_timeout(cb_animate, this);
   return _fi->frames_size != 0;
 }
 
@@ -664,8 +685,7 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
           _fi->loop_count = params[1] | (params[2] << 8);
           DEBUG(("netscape loop count: %u\n", _fi->loop_count));
         }
-      }
-      else if (ext->Function == GRAPHICS_EXT_FUNC_CODE) {
+      } else if (ext->Function == GRAPHICS_EXT_FUNC_CODE) {
         DGifExtensionToGCB(ext->ByteCount, ext->Bytes, &gcb);
         DEBUG(("#%d %d/%d %dx%d delay: %d, dispose: %d transparent_color: %d\n",
                (int)_fi->frames_size + 1,
@@ -822,7 +842,15 @@ void Fl_Anim_GIF_Image::cb_animate(void *d_) {
 
 /*virtual*/
 Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
-  return 0; // not supported currently!
+  Fl_Anim_GIF_Image *copied = new Fl_Anim_GIF_Image();
+  for (int i = 0; i < _fi->frames_size; i++) {
+    push_back_frame(copied->_fi, &_fi->frames[i]);
+    copied->_fi->frames[i].rgb = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(W_, H_);
+  }
+  copied->w(W_);
+  copied->h(H_);
+  copied->_valid = copied->_fi->frames_size > 0;
+  return copied;
 }
 
 Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(int W_, int H_) {

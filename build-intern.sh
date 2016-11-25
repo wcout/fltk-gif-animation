@@ -5,6 +5,7 @@ fltk=../fltk-1.4
 
 target=animgifimage
 target1=animgifimage-simple
+target2=animgifimage-resize
 src=intern
 #opt=-pg
 
@@ -24,3 +25,5 @@ fi
 g++ -Wall -pipe -pedantic -O3 $opt -o $target `$fltk/fltk-config --use-images --cxxflags` $src/test/$target.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt
 
 g++ -Wall -pipe -pedantic -O3 $opt -o $target1 `$fltk/fltk-config --use-images --cxxflags` $src/test/$target1.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt
+
+g++ -Wall -pipe -pedantic -O3 $opt -o $target2 `$fltk/fltk-config --use-images --cxxflags` $src/test/$target2.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt

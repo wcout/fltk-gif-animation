@@ -33,6 +33,7 @@ class FL_EXPORT Fl_GIF_Image : public Fl_Pixmap {
 public:
 
   Fl_GIF_Image(const char* filename, bool anim = false);
+  Fl_GIF_Image();
   virtual ~Fl_GIF_Image();
 
 protected:

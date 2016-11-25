@@ -36,6 +36,7 @@ public:
    after successful load.
    */
   Fl_Anim_GIF_Image(const char *name_, Fl_Widget *canvas_ = 0, unsigned short flags_ = 0);
+  Fl_Anim_GIF_Image();
   virtual ~Fl_Anim_GIF_Image();
   /**
    The color_average() method applies the specified color_average
@@ -98,6 +99,10 @@ public:
    The start() (re-)starts the playing of the frames.
    */
   bool start();
+  /**
+   The stop() stops the playing of the frames.
+   */
+  bool stop();
   /**
    The resize() method resizes the image to the
    specified size, replacing the current image.
