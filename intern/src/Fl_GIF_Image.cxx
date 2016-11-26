@@ -28,11 +28,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "fl_gif_private.H"	// GIFLIB decoding functions
-#include <cmath> // lround
+#include "fl_gif_private.H"  // GIFLIB decoding functions
+#include <cmath> // lround()
 
 //
-// This routine is a modified version of DGifImageSlurp()
+// This routine is a modified version of DGifSlurp()
 // that reads only one image per time.
 //
 
@@ -411,9 +411,9 @@ struct FrameInfo {
     offscreen(0) {}
   int frames_size;                         // number of frames stored in 'frames'
   GifFrame *frames;                        // "vector" for frames
-  int loop_count;
+  int loop_count;                          // loop count from file
   int background_color_index;              // needed for dispose()
-  RGBA_Color background_color;  // needed for dispose()
+  RGBA_Color background_color;             // needed for dispose()
   GifFrame frame;                          // current processed frame
   int canvas_w;                            // width of GIF from header
   int canvas_h;                            // height of GIF from header
@@ -421,11 +421,11 @@ struct FrameInfo {
   Fl_Color average_color;                  // color for color_average()
   float average_weight;                    // weight for color_average (negative: none)
   bool debug;                              // Flag for debug outputs
-  uchar *offscreen;
+  uchar *offscreen;                        // internal "offscreen" buffer to build frames
 };
 
-#include <FL/Fl.H>			// for Fl::add_timeout()
-#include <FL/Fl_Group.H>	// for Fl_Group::parent()
+#include <FL/Fl.H>         // for Fl::add_timeout()
+#include <FL/Fl_Group.H>   // for Fl_Group::parent()
 
 #define DEBUG(x) if ( _fi->debug ) printf x
 //#define DEBUG(x)
