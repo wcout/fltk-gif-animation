@@ -39,6 +39,7 @@ public:
         delete animgif;
       }
       Fl_Anim_GIF_Image *copied = (Fl_Anim_GIF_Image *)orig->copy(W_, H_);
+      window()->cursor(FL_CURSOR_DEFAULT);
       copied->canvas(this, Fl_Anim_GIF_Image::Start |
                      Fl_Anim_GIF_Image::DontResizeCanvas);
       copied->start();
@@ -55,6 +56,7 @@ public:
     // to avoid lockups
     Fl::remove_timeout(do_resize_cb, this);
     Fl::add_timeout(0.1, do_resize_cb, this);
+    window()->cursor(FL_CURSOR_WAIT);
   }
 };
 
