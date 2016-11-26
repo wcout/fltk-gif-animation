@@ -66,7 +66,7 @@ public:
 };
 
 int main(int argc_, char *argv_[]) {
-  Fl_Double_Window win(800, 600, "test animated copy");
+  Fl_Double_Window win(640, 480, "test animated copy");
 
   // prepare a canvas for the animation
   // (we want to show it in the center of the window)
@@ -91,7 +91,10 @@ int main(int argc_, char *argv_[]) {
   }
 
   // set initial size to fit into window
-  canvas.resize(0, 0, win.w(), win.h());
+  double ratio = orig->valid() ? (double)orig->w() / orig->h() : 1;
+  int W = win.w() - 40;
+  int H = (double)W / ratio;
+  win.size(W, H);
 
   // check if loading succeeded
   printf("%s: valid: %d frames: %d\n", orig->name(), orig->valid(), orig->frames());
