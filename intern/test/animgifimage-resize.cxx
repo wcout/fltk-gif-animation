@@ -26,7 +26,7 @@ public:
         fl_rectf(x, y, 32, 32);
       }
     }
-    // draw the current image frame
+    // draw the current image frame over the grid
     Inherited::draw();
   }
   void do_resize(int W_, int H_) {
@@ -40,10 +40,15 @@ public:
       }
       Fl_Anim_GIF_Image *copied = (Fl_Anim_GIF_Image *)orig->copy(W_, H_);
       window()->cursor(FL_CURSOR_DEFAULT);
+      if (!copied->valid()) { // check success of copy
+        Fl::warning("Fl_Anim_GIF_Image::copy() %d x %d failed", W_, H_);
+      }
+      else {
+        printf("resized to %d x %d\n", copied->w(), copied->h());
+      }
       copied->canvas(this, Fl_Anim_GIF_Image::Start |
                      Fl_Anim_GIF_Image::DontResizeCanvas);
       copied->start();
-      printf("resized to %d x %d\n", copied->w(), copied->h());
     }
   }
   static void do_resize_cb(void *d_) {
@@ -53,7 +58,7 @@ public:
   virtual void resize(int x_, int y_, int w_, int h_) {
     Inherited::resize(x_, y_, w_, h_);
     // decouple resize event from actual resize operation
-    // to avoid lockups
+    // to avoid lockups..
     Fl::remove_timeout(do_resize_cb, this);
     Fl::add_timeout(0.1, do_resize_cb, this);
     window()->cursor(FL_CURSOR_WAIT);
