@@ -36,7 +36,6 @@ public:
       if (animgif != orig ) {
         delete animgif;
       }
-//      Fl_RGB_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR); // very slow!!
       Fl_Anim_GIF_Image *copied = (Fl_Anim_GIF_Image *)orig->copy(W_, H_);
       copied->canvas(this, Fl_Anim_GIF_Image::Start |
                      Fl_Anim_GIF_Image::DontResizeCanvas);
@@ -56,7 +55,7 @@ public:
 };
 
 int main(int argc_, char *argv_[]) {
-  Fl_Double_Window win(800, 600, "animated resize");
+  Fl_Double_Window win(800, 600, "test animated copy");
 
   // prepare a canvas for the animation
   // (we want to show it in the center of the window)
@@ -73,6 +72,12 @@ int main(int argc_, char *argv_[]) {
                              /*canvas_=*/ &canvas,
                               /*flags_=*/ Fl_Anim_GIF_Image::Start |
                                           Fl_Anim_GIF_Image::DontResizeCanvas);
+  if (argc_ > 2) {
+    Fl_RGB_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
+    printf("Using bilinear scaling - can be slow!\n");
+    // NOTE: this is *really* slow. Scaling the TrueColor test image
+    //       to full HD desktop takes about 45 seconds!
+  }
 
   // set initial size to fit into window
   canvas.resize(0, 0, win.w(), win.h());
