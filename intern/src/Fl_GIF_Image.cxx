@@ -566,8 +566,9 @@ void Fl_Anim_GIF_Image::clear_frames() {
 // add a frame to the "vector" in FrameInfo
 static bool push_back_frame(FrameInfo *fi_, GifFrame *frame_) {
   void *tmp = realloc(fi_->frames, sizeof(GifFrame) * (fi_->frames_size + 1));
-  if (!tmp)
+  if (!tmp) {
     return false;
+  }
   fi_->frames = (GifFrame *)tmp;
   memcpy(&fi_->frames[ fi_->frames_size ], frame_, sizeof(GifFrame));
   fi_->frames_size++;
@@ -648,6 +649,7 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   DEBUG(("%d x %d  BG=%d aspect %d\n", gifFileIn->SWidth, gifFileIn->SHeight, gifFileIn->SBackGroundColor, gifFileIn->AspectByte));
   _fi->canvas_w = gifFileIn->SWidth;
   _fi->canvas_h = gifFileIn->SHeight;
+  free(_fi->offscreen);
   _fi->offscreen = (uchar *)calloc(_fi->canvas_w * _fi->canvas_h * 4, 1);
   _fi->background_color_index = gifFileIn->SColorMap ? gifFileIn->SBackGroundColor : -1;
   if (_fi->background_color_index >= 0) {
@@ -737,7 +739,7 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
     frame.rgb->alloc_array = 1;
 
     if (!push_back_frame(_fi, &frame)) {
-      fprintf(stderr, "Fl_Anim_GIF_Image::load(%s): Out of memory", name_);
+      Fl::warning("Fl_Anim_GIF_Image::load(%s): Out of memory", name_);
       close_gif_file();
       return false;
     }
@@ -804,6 +806,9 @@ void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, unsigned short flags_/* = 0*/
     _canvas->image(this); // set animation as image() of canvas
   if (_canvas && !(flags_ & DontResizeCanvas))
     _canvas->size(w(), h());
+
+  // Note: Use 'Start' flag is *NOT* used here,
+  //       but an already running animation is restarted.
   _frame = -1;
   if (Fl::has_timeout(cb_animate, this)) {
     Fl::remove_timeout(cb_animate, this);
@@ -844,12 +849,15 @@ void Fl_Anim_GIF_Image::cb_animate(void *d_) {
 Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
   Fl_Anim_GIF_Image *copied = new Fl_Anim_GIF_Image();
   for (int i = 0; i < _fi->frames_size; i++) {
-    push_back_frame(copied->_fi, &_fi->frames[i]);
+    if (!push_back_frame(copied->_fi, &_fi->frames[i])) {
+      Fl::warning("Fl_Anim_GIF_Image::copy(%s): Out of memory", name());
+      break;
+    }
     copied->_fi->frames[i].rgb = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(W_, H_);
   }
   copied->w(W_);
   copied->h(H_);
-  copied->_valid = copied->_fi->frames_size > 0;
+  copied->_valid = _valid && copied->_fi->frames_size == _fi->frames_size;
   return copied;
 }
 
@@ -896,8 +904,6 @@ void Fl_Anim_GIF_Image::color_average(Fl_Color c_, float i_) {
 void Fl_Anim_GIF_Image::desaturate() {
   _fi->desaturate = true;
 }
-
-// TODO: is it possible to implement copy()?
 
 //
 // End of "$Id: Fl_GIF_Image.cxx 10751 2015-06-14 17:07:31Z AlbrechtS $".

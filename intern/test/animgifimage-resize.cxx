@@ -30,11 +30,14 @@ public:
   void do_resize(int W_, int H_) {
     if (image() && (image()->w() != W_ || image()->h() != H_)) {
       Fl_Anim_GIF_Image *animgif = (Fl_Anim_GIF_Image *)image();
+      animgif->stop();
       image(0);
+      // delete already copied images
+      if (animgif != orig ) {
+        delete animgif;
+      }
 //      Fl_RGB_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR); // very slow!!
       Fl_Anim_GIF_Image *copied = (Fl_Anim_GIF_Image *)orig->copy(W_, H_);
-      animgif->canvas(0);
-      animgif->stop();
       copied->canvas(this, Fl_Anim_GIF_Image::Start |
                      Fl_Anim_GIF_Image::DontResizeCanvas);
       copied->start();

@@ -46,7 +46,7 @@ The current status is promising - it works well, but needs some more tests.
 I will stay with `Solution 2` for now and try to improve a few aspects, but
 it may take some time.
 
-*Update:*
+*Update 2016/11/13:*
 
 A few bugs have been fixed in `Solution 2` that have not been reflected in
 `Solution 1` yet.
@@ -60,6 +60,8 @@ Issues remaining in `Solution 2`:
 - Can the API for `Fl_Image()` derived classes be completed? E.g. how to implement
   `Fl_Animated_GIF_Image::color_average()`/`desaturate()` and `copy()`?
 
+*Update 2016/11/19:*
+
   - `color_average()` and `desaturate()` work now
   - `copy()` is hard to implement - currently I have implemented a `resize()` method
     that can be used to _replace_ the current image with the resized one (useful
@@ -67,11 +69,19 @@ Issues remaining in `Solution 2`:
   - also it works to run several instances of the _same_ animation simultaneously
     and to use it as tiles in `Fl_Tiled_Image`
 
+Issues remaining:
+
 - Round up the API
   - allow application controlled playback
   - specify repeat count
   - ...
 
+*Update 2016/11/26:*
+
+  - Complete code refactoring. Got rid of helper class `RGB_Image`.
+
+  - `copy()` has also been implemented now. See usage with test program
+    `animgifimage-resize`. Scaling large GIF's can be pretty slow though...
 
 ## Test
 
