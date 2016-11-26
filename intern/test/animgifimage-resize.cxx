@@ -17,6 +17,7 @@ public:
   Canvas(int x_, int y_, int w_, int h_) :
     Inherited(x_, y_, w_, h_) {}
   virtual void draw() {
+    // draw a transparency grid as background
     static const Fl_Color C1 = FL_WHITE;
     static const Fl_Color C2 = FL_GRAY;
     for (int y = 0; y < h(); y += 32) {
@@ -25,6 +26,7 @@ public:
         fl_rectf(x, y, 32, 32);
       }
     }
+    // draw the current image frame
     Inherited::draw();
   }
   void do_resize(int W_, int H_) {
@@ -49,6 +51,8 @@ public:
   }
   virtual void resize(int x_, int y_, int w_, int h_) {
     Inherited::resize(x_, y_, w_, h_);
+    // decouple resize event from actual resize operation
+    // to avoid lockups
     Fl::remove_timeout(do_resize_cb, this);
     Fl::add_timeout(0.1, do_resize_cb, this);
   }
