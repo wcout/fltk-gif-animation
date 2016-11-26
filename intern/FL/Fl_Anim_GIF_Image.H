@@ -10,7 +10,7 @@ class Fl_Widget;
 /**
  The Fl_Anim_GIF_Image class supports loading, caching,
  and drawing of animated Compuserve GIF<SUP>SM</SUP> images.
- The class loads all images contained in the file aand animates
+ The class loads all images contained in the file and animates
  them by cycling through them as defined by the delay times in
  the image file.
 
@@ -43,6 +43,11 @@ public:
    to all frames of the animation.
    */
   virtual void color_average(Fl_Color c_, float i_);
+  /**
+   The virtual copy method makes a copy of the animated image
+   and resizes all of its frame images to W x H using
+   the current resize method.
+   */
   virtual Fl_Image *copy(int W_, int H_);
   /**
    The desaturate() method applies desaturate() to all frames
@@ -96,11 +101,11 @@ public:
   void canvas(Fl_Widget *canvas_, unsigned short flags_ = 0);
   Fl_Widget *canvas() const;
   /**
-   The start() (re-)starts the playing of the frames.
+   The start() method (re-)starts the playing of the frames.
    */
   bool start();
   /**
-   The stop() stops the playing of the frames.
+   The stop() method stops the playing of the frames.
    */
   bool stop();
   /**
