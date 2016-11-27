@@ -12,7 +12,7 @@ static void quit_cb(Fl_Widget* w_, void*) {
   exit(0);
 }
 
-bool openFile(const char *name_, bool debug_, bool close_ = false) {
+Fl_Window *openFile(const char *name_, bool debug_, bool close_ = false) {
   Fl_Double_Window *win = new Fl_Double_Window(100, 100);
   win->color(BACKGROUND);
   if (close_)
@@ -31,7 +31,7 @@ bool openFile(const char *name_, bool debug_, bool close_ = false) {
     animgif->start();
   } else {
     delete win;
-    return false;
+    return 0;
   }
   if (debug_) {
     for (int i = 0; i < animgif->frames(); i++) {
@@ -47,7 +47,7 @@ bool openFile(const char *name_, bool debug_, bool close_ = false) {
       win->show();
     }
   }
-  return true;
+  return win;
 }
 
 #include <FL/filename.H>
@@ -89,8 +89,9 @@ int main(int argc_, char *argv_[]) {
       const char *filename = fl_file_chooser("Select a GIF image file","*.{gif,GIF}", NULL);
       if (!filename)
         break;
-      openFile(filename, false);
+      Fl_Window *win = openFile(filename, false);
       Fl::run();
+      delete win; // delete last window (which is now just hidden) to test destructors
     }
   }
   return Fl::run();

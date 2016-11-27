@@ -37,7 +37,7 @@ static void cb_forced_redraw(void *d_) {
     Fl::repeat_timeout(RedrawDelay, cb_forced_redraw);
 }
 
-bool openFile(const char *name_, char *flags_, bool close_ = false) {
+Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
   bool uncache = strchr(flags_, 'u');
   bool debug = strchr(flags_, 'd');
   bool desaturate = strchr(flags_, 'D');
@@ -53,6 +53,7 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
   printf("\nLoading '%s'%s\n", name_, uncache ? " (uncached)" : "");
   Fl_Box *canvas = test_tiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas for animation
   Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, (debug ? Fl_Anim_GIF_Image::Debug : 0));
+  win->user_data(animgif); // store address of image (see note in main())
   animgif->uncache(uncache);
   if (resizable) // note: bug in FLTK (STR 3352) - test resize functionality here
     animgif->resize(0.7); // hardcoded for now!
@@ -99,7 +100,7 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
     animgif->start();
   } else {
     delete win;
-    return false;
+    return 0;
   }
   if (debug) {
     for (int i = 0; i < animgif->frames(); i++) {
@@ -115,7 +116,7 @@ bool openFile(const char *name_, char *flags_, bool close_ = false) {
       win->show();
     }
   }
-  return true;
+  return win;
 }
 
 #include <FL/filename.H>
@@ -205,8 +206,20 @@ int main(int argc_, char *argv_[]) {
       const char *filename = fl_file_chooser("Select a GIF image file","*.{gif,GIF}", NULL);
       if (!filename)
         break;
-      openFile(filename, openFlags);
+      Fl_Window *win = openFile(filename, openFlags);
       Fl::run();
+      // delete last window (which is now just hidden) to test destructors
+      // NOTE: it is essential, that before doing this also the
+      //       animated image is destroyed, otherwise it will crash
+      //       because it's canvas will be gone.
+      //       In order to keep this demo simple, the adress of the
+      //       Fl_Anim_GIF_Image has been stored in the window's user_data.
+      //       In a real-life application you you will probably store
+      //       is somewhere in the window's or canvas' object and destroy
+      //       the image in the window's or cavas' destructor.
+      if (win->user_data())
+        delete ((Fl_Anim_GIF_Image *)win->user_data());
+      delete win;
     }
   }
   return Fl::run();
