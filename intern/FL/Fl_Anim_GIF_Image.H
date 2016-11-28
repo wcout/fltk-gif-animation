@@ -74,6 +74,10 @@ public:
    */
   int frames() const;
   /**
+   Set the current frame in the range index [0-frames() -1]
+   */
+  void frame(int frame_);
+  /**
    Return the current frame in the range index [0-frames() -1]
    or -1 if the image has no frames.
    */
@@ -148,6 +152,7 @@ protected:
    the image from file.
    */
   bool load(const char *name_);
+  void set_frame(int frame_);
 private:
   static void cb_animate(void *d_);
 private:

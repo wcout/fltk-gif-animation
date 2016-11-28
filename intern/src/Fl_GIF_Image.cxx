@@ -575,14 +575,9 @@ static bool push_back_frame(FrameInfo *fi_, GifFrame *frame_) {
   return true;
 }
 
-bool Fl_Anim_GIF_Image::next_frame() {
+void Fl_Anim_GIF_Image::set_frame(int frame_) {
   int last_frame = _frame;
-  _frame++;
-  if (_frame >= _fi->frames_size)
-    _frame = 0;
-  if (_frame >= _fi->frames_size)
-    return false;
-
+  _frame = frame_;
   // NOTE: uncaching decreases performance, but saves a lot of memory
   if (_uncache && this->image())
     this->image()->uncache();
@@ -614,8 +609,18 @@ bool Fl_Anim_GIF_Image::next_frame() {
       canvas()->redraw();
     }
   }
-  double delay = _fi->frames[_frame].delay;
-  if (delay > 0 && _speed > 0) {	// normal GIF has no delay
+}
+
+bool Fl_Anim_GIF_Image::next_frame() {
+  int frame(_frame);
+  frame++;
+  if (frame >= _fi->frames_size)
+    frame = 0;
+  if (frame >= _fi->frames_size)
+    return false;
+  set_frame(frame);
+  double delay = _fi->frames[frame].delay;
+  if (delay > 0 && _speed > 0) {  // normal GIF has no delay
     delay /= _speed;
     Fl::add_timeout(delay, cb_animate, this);
   }
@@ -782,6 +787,19 @@ int Fl_Anim_GIF_Image::frames() const {
 
 int Fl_Anim_GIF_Image::frame() const {
   return _frame;
+}
+
+void Fl_Anim_GIF_Image::frame(int frame_) {
+  if (Fl::has_timeout(cb_animate, this)) {
+    Fl::warning("Fl_Anim_GIF_Image::frame(%d): not idle!", frame_);
+    return;
+  }
+  if (frame_ >= 0 && frame_ < frames()) {
+    set_frame(frame_);
+  }
+  else {
+    Fl::warning("Fl_Anim_GIF_Image::frame(%d): out of range!", frame_);
+  }
 }
 
 Fl_Image *Fl_Anim_GIF_Image::image() const {
