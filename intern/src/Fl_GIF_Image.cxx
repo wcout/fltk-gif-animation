@@ -567,6 +567,7 @@ void Fl_Anim_GIF_Image::clear_frames() {
   free(_fi->frames);
   _fi->frames = 0;
   _fi->frames_size = 0;
+  _valid = false;
 }
 
 // add a frame to the "vector" in FrameInfo
@@ -775,7 +776,6 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
     frame.rgb->alloc_array = 1;
 
     if (!push_back_frame(_fi, &frame)) {
-      Fl::warning("Fl_Anim_GIF_Image::load(%s): Out of memory", name_);
       close_gif_file();
       return false;
     }
@@ -903,7 +903,6 @@ Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
 #endif
   for (int i = 0; i < _fi->frames_size; i++) {
     if (!push_back_frame(copied->_fi, &_fi->frames[i])) {
-      Fl::warning("Fl_Anim_GIF_Image::copy(%s): Out of memory", name());
       break;
     }
 #ifdef ANIMGIF_MINIMAL_UPDATE
