@@ -53,7 +53,7 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
   printf("\nLoading '%s'%s ... ", name_, uncache ? " (uncached)" : "");
   Fl_Box *canvas = test_tiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas for animation
   Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, (debug ? Fl_Anim_GIF_Image::Debug : 0));
-  printf(animgif->valid() ? "OK" : "ERROR" );
+  printf("%s\n", animgif->valid() ? "OK" : "ERROR" );
   win->user_data(animgif); // store address of image (see note in main())
   animgif->uncache(uncache);
   if (resizable) // note: bug in FLTK (STR 3352) - test resize functionality here
