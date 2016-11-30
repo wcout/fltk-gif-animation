@@ -18,11 +18,12 @@ public:
     Inherited(x_, y_, w_, h_) {}
   virtual void draw() {
     // draw a transparency grid as background
-    static const Fl_Color C1 = FL_WHITE;
-    static const Fl_Color C2 = FL_GRAY;
-    for (int y = 0; y < h(); y += 32) {
-      for (int x = 0; x < w(); x += 32) {
-        fl_color(x%64 ? y%64 ? C1 : C2 : y%64 ? C2 : C1);
+    static const Fl_Color C1 = fl_rgb_color(0xcc, 0xcc, 0xcc);
+    static const Fl_Color C2 = fl_rgb_color(0x88, 0x88, 0x88);
+    static const int SZ = 8;
+    for (int y = 0; y < h(); y += SZ) {
+      for (int x = 0; x < w(); x += SZ) {
+        fl_color(x%(SZ * 2) ? y%(SZ * 2) ? C1 : C2 : y%(SZ * 2) ? C2 : C1);
         fl_rectf(x, y, 32, 32);
       }
     }
