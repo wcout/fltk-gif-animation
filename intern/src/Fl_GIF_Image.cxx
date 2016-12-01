@@ -670,7 +670,7 @@ void Fl_Anim_GIF_Image::draw(int x_, int y_, int w_, int h_, int cx_/* = 0*/, in
 }
 
 bool Fl_Anim_GIF_Image::load(const char *name_) {
-  DEBUG(("Fl_Anim_GIF_Image:::load '%s'\n", name_));
+  DEBUG(("\nFl_Anim_GIF_Image::load '%s'\n", name_));
   clear_frames();
 
   // open gif file for readin
