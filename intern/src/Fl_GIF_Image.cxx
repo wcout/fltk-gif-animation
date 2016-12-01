@@ -200,11 +200,15 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
   GifImageDesc *id = &image->ImageDesc;
   ColorMapObject *ColorMap = id->ColorMap ? id->ColorMap : gifFileIn->SColorMap;
   uchar *Image = image->RasterBits;
+  int W = id->Width;
+  int H = id->Height;
+  int X = id->Left;
+  int Y = id->Top;
   if (anim) {
     // make a copy of the raster data because we modify them
     // (but for animated gif we need to keep the original)
-    Image = new uchar[Width * Height];
-    memcpy(Image, image->RasterBits, Width * Height);
+    Image = new uchar[W * H];
+    memcpy(Image, image->RasterBits, W * H);
   }
   int HasColormap = ColorMap != 0;
   int ColorMapSize = ColorMap ? ColorMap->ColorCount : 0;
@@ -253,7 +257,7 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
   // transparent pixel must be zero, swap if it isn't:
   if (has_transparent && transparent_pixel != 0) {
     // swap transparent pixel with zero
-    p = Image+Width*Height;
+    p = Image+W*H;
     while (p-- > Image) {
       if (*p==transparent_pixel) *p = 0;
       else if (!*p) *p = transparent_pixel;
@@ -277,7 +281,7 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
   uchar remap[256];
   int i;
   for (i = 0; i < ColorMapSize; i++) used[i] = 0;
-  p = Image+Width*Height;
+  p = Image+W*H;
   while (p-- > Image) used[*p] = 1;
 
   // remap them to start with printing characters:
@@ -305,14 +309,23 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
     }
 
   // remap the image data:
-  p = Image+Width*Height;
+  p = Image+W*H;
   while (p-- > Image) *p = remap[*p];
 
   // split the image data into lines:
-  for (i=0; i<Height; i++) {
+  for (i=0; i<Y; i++) {
     new_data[i+2] = new char[Width+1];
-    memcpy(new_data[i + 2], (char*)(Image + i*Width), Width);
-    new_data[i + 2][Width] = 0;
+    memset(new_data[i+2], ' ', Width);
+  }
+  for (i=Y; i<Y+H; i++) {
+    new_data[i+2] = new char[Width+1];
+    memset(new_data[i+2], ' ', Width);
+    memcpy(&new_data[i + 2][X], (char*)(Image + i*W), W);
+    new_data[i + 2][W] = 0;
+  }
+  for (i=Y+H; i<Height; i++) {
+    new_data[i+2] = new char[Width+1];
+    memset(new_data[i+2], ' ', Width);
   }
 
   data((const char **)new_data, Height + 2);
