@@ -245,6 +245,14 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
     transparent_pixel = gcb.TransparentColor;
   }
 
+  if (!has_transparent && (W != Width || H != Height)) {
+    int background_color_index = gifFileIn->SColorMap ? gifFileIn->SBackGroundColor : -1;
+    if (background_color_index >= 0) {
+      has_transparent = 1;
+      transparent_pixel = background_color_index;
+    }
+  }
+
   // We are done reading the file, now convert to xpm:
   w(Width);
   h(Height);
@@ -313,19 +321,32 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
   while (p-- > Image) *p = remap[*p];
 
   // split the image data into lines:
-  for (i=0; i<Y; i++) {
-    new_data[i+2] = new char[Width+1];
-    memset(new_data[i+2], ' ', Width);
+  for (i = 0; i < Y; i++) {
+    if (i >= Height) break;
+    new_data[i + 2] = new char[Width+1];
+    memset(new_data[i + 2], ' ', Width);
+    new_data[i + 2][Width] = 0;
   }
-  for (i=Y; i<Y+H; i++) {
-    new_data[i+2] = new char[Width+1];
-    memset(new_data[i+2], ' ', Width);
-    memcpy(&new_data[i + 2][X], (char*)(Image + i*W), W);
-    new_data[i + 2][W] = 0;
+  int max_w = W;
+  if (X < Width) {
+    if (X + W > Width)
+      max_w = Width - X;
   }
-  for (i=Y+H; i<Height; i++) {
-    new_data[i+2] = new char[Width+1];
-    memset(new_data[i+2], ' ', Width);
+  else
+    max_w = 0;
+  for (i = Y; i < Y + H; i++) {
+    if (i >= Height) break;
+    new_data[i + 2] = new char[Width+1];
+    memset(new_data[i + 2], ' ', Width);
+    if (X < Width)
+      memcpy(&new_data[i + 2][X], (char*)(Image + i*W), max_w);
+    new_data[i + 2][Width] = 0;
+  }
+  for (i = Y + H; i < Height; i++) {
+    if (i >= Height) break;
+    new_data[i + 2] = new char[Width+1];
+    memset(new_data[i + 2], ' ', Width);
+    new_data[i + 2][Width] = 0;
   }
 
   data((const char **)new_data, Height + 2);
