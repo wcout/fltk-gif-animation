@@ -200,15 +200,13 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
   GifImageDesc *id = &image->ImageDesc;
   ColorMapObject *ColorMap = id->ColorMap ? id->ColorMap : gifFileIn->SColorMap;
   uchar *Image = image->RasterBits;
-  int W = id->Width;
-  int H = id->Height;
-  int X = id->Left;
-  int Y = id->Top;
+  Width = id->Width; // overwrite canvas size
+  Height = id->Height; // with size of first image
   if (anim) {
     // make a copy of the raster data because we modify them
     // (but for animated gif we need to keep the original)
-    Image = new uchar[W * H];
-    memcpy(Image, image->RasterBits, W * H);
+    Image = new uchar[Width * Height];
+    memcpy(Image, image->RasterBits, Width * Height);
   }
   int HasColormap = ColorMap != 0;
   int ColorMapSize = ColorMap ? ColorMap->ColorCount : 0;
@@ -245,14 +243,6 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
     transparent_pixel = gcb.TransparentColor;
   }
 
-  if (!has_transparent && (W != Width || H != Height)) {
-    int background_color_index = gifFileIn->SColorMap ? gifFileIn->SBackGroundColor : -1;
-    if (background_color_index >= 0) {
-      has_transparent = 1;
-      transparent_pixel = background_color_index;
-    }
-  }
-
   // We are done reading the file, now convert to xpm:
   w(Width);
   h(Height);
@@ -265,7 +255,7 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
   // transparent pixel must be zero, swap if it isn't:
   if (has_transparent && transparent_pixel != 0) {
     // swap transparent pixel with zero
-    p = Image+W*H;
+    p = Image+Width*Height;
     while (p-- > Image) {
       if (*p==transparent_pixel) *p = 0;
       else if (!*p) *p = transparent_pixel;
@@ -289,7 +279,7 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
   uchar remap[256];
   int i;
   for (i = 0; i < ColorMapSize; i++) used[i] = 0;
-  p = Image+W*H;
+  p = Image+Width*Height;
   while (p-- > Image) used[*p] = 1;
 
   // remap them to start with printing characters:
@@ -317,35 +307,13 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
     }
 
   // remap the image data:
-  p = Image+W*H;
+  p = Image+Width*Height;
   while (p-- > Image) *p = remap[*p];
 
   // split the image data into lines:
-  for (i = 0; i < Y; i++) {
-    if (i >= Height) break;
+  for (i = 0; i < Height; i++) {
     new_data[i + 2] = new char[Width+1];
-    memset(new_data[i + 2], ' ', Width);
-    new_data[i + 2][Width] = 0;
-  }
-  int max_w = W;
-  if (X < Width) {
-    if (X + W > Width)
-      max_w = Width - X;
-  }
-  else
-    max_w = 0;
-  for (i = Y; i < Y + H; i++) {
-    if (i >= Height) break;
-    new_data[i + 2] = new char[Width+1];
-    memset(new_data[i + 2], ' ', Width);
-    if (X < Width)
-      memcpy(&new_data[i + 2][X], (char*)(Image + i*W), max_w);
-    new_data[i + 2][Width] = 0;
-  }
-  for (i = Y + H; i < Height; i++) {
-    if (i >= Height) break;
-    new_data[i + 2] = new char[Width+1];
-    memset(new_data[i + 2], ' ', Width);
+    memcpy(new_data[i + 2], (char*)(Image + i*Width), Width);
     new_data[i + 2][Width] = 0;
   }
 
@@ -710,6 +678,8 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   DEBUG(("%d x %d  BG=%d aspect %d\n", gifFileIn->SWidth, gifFileIn->SHeight, gifFileIn->SBackGroundColor, gifFileIn->AspectByte));
   _fi->canvas_w = gifFileIn->SWidth;
   _fi->canvas_h = gifFileIn->SHeight;
+  w(_fi->canvas_w);
+  h(_fi->canvas_h);
   free(_fi->offscreen);
   _fi->offscreen = (uchar *)calloc(_fi->canvas_w * _fi->canvas_h * 4, 1);
   _fi->background_color_index = gifFileIn->SColorMap ? gifFileIn->SBackGroundColor : -1;
