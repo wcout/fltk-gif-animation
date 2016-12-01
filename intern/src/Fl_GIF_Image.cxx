@@ -401,7 +401,6 @@ struct GifFrame {
     h(0),
     delay(0),
     dispose(0),
-    transparent(false),
     transparent_color_index(-1) {}
   Fl_RGB_Image *rgb;                       // full frame image
   Fl_Color average_color;                  // last average color
@@ -410,7 +409,6 @@ struct GifFrame {
   int x, y, w, h;                          // frame original dimensions
   double delay;                            // delay (already converted to ms)
   int dispose;                             // disposal method
-  bool transparent;                        // background color is transparent color
   int transparent_color_index;             // needed for dispose()
   RGBA_Color transparent_color;            // needed for dispose()
 };
@@ -754,8 +752,6 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
                                   ColorMap->Colors[frame.transparent_color_index].Red,
                                   ColorMap->Colors[frame.transparent_color_index].Green,
                                   ColorMap->Colors[frame.transparent_color_index].Blue);
-
-    frame.transparent = _fi->background_color_index >= 0 && _fi->background_color_index == gcb.TransparentColor;
 
     dispose(_frame, _fi, _fi->offscreen);
 
