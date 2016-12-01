@@ -471,14 +471,14 @@ static void draw(Fl_RGB_Image &rgb_, uchar *offscreen_) {
 // reset offscreen to background color
 static void setToBackGround(uchar *offscreen_, int frame_, FrameInfo *_fi) {
   int bg = _fi->background_color_index;
-  int tp = _fi->frames[frame_].transparent_color_index;
+  int tp = frame_ >= 0 ?_fi->frames[frame_].transparent_color_index : bg;
   DEBUG(("setToBackGround [%d] tp = %d, bg = %d\n", frame_, tp, bg));
   RGBA_Color color = _fi->background_color;
   if (tp >= 0)
     color = _fi->frames[frame_].transparent_color;
   if (tp >= 0 && bg >= 0)
     bg = tp;
-  color.alpha = tp == bg ? T_FULL : T_NONE;
+  color.alpha = tp == bg ? T_FULL : tp < 0 ? T_FULL : T_NONE;
   DEBUG(("  setToColor %d/%d/%d alpha=%d\n", color.r, color.g, color.b, color.alpha));
   for (uchar *p = offscreen_ + _fi->canvas_w * _fi->canvas_h * 4 - 4; p >= offscreen_; p -= 4)
     memcpy(p, &color, 4);
@@ -492,13 +492,17 @@ static void dispose(int frame_, FrameInfo *_fi, uchar *offscreen_) {
   switch (_fi->frames[frame_].dispose) {
     case DISPOSE_PREVIOUS: {
         // dispose to previous restores to first not DISPOSE_TO_PREVIOUS frame
-        while (frame_ > 0 && _fi->frames[frame_].dispose == DISPOSE_PREVIOUS)
-          frame_--;
-        DEBUG(("     dispose frame %d to previous\n", frame_ + 1));
-        // copy the image data..
-        Fl_RGB_Image *old_data = _fi->frames[frame_].rgb;
+        int prev(frame_);
+        while (prev > 0 && _fi->frames[prev].dispose == DISPOSE_PREVIOUS)
+          prev--;
+        if (prev == 0 && _fi->frames[prev].dispose == DISPOSE_PREVIOUS) {
+          setToBackGround(offscreen_, -1, _fi);
+          return;
+        }
+        DEBUG(("     dispose frame %d to previous frame %d\n", frame_ + 1, prev + 1));
+        // copy the previous image data..
         uchar *dst = offscreen_;
-        const char *src = old_data->data()[0];
+        const char *src = _fi->frames[prev].rgb->data()[0];
         memcpy((char *)dst, (char *)src, _fi->canvas_w * _fi->canvas_h * 4);
         break;
       }
@@ -619,7 +623,8 @@ void Fl_Anim_GIF_Image::set_frame(int frame_) {
   if (canvas()) {
     if ((last_frame >= 0 && _fi->frames[last_frame].dispose == DISPOSE_BACKGROUND) ||
         _fi->frames[_frame].dispose == DISPOSE_BACKGROUND ||
-        (_frame == 0 && _fi->frames[_frame].transparent)) {
+        _fi->frames[_frame].dispose == DISPOSE_PREVIOUS ||
+        (_frame == 0 /*&& _fi->frames[_frame].transparent*/)) {
       if (canvas()->parent()) {
         canvas()->parent()->redraw();
       } else {
