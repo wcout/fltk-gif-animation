@@ -621,10 +621,9 @@ void Fl_Anim_GIF_Image::set_frame(int frame_) {
     _fi->frames[_frame].desaturated = true;
   }
   if (canvas()) {
-    if ((last_frame >= 0 && _fi->frames[last_frame].dispose == DISPOSE_BACKGROUND) ||
-        _fi->frames[_frame].dispose == DISPOSE_BACKGROUND ||
-        _fi->frames[_frame].dispose == DISPOSE_PREVIOUS ||
-        (_frame == 0 /*&& _fi->frames[_frame].transparent*/)) {
+    if ((last_frame >= 0 && (_fi->frames[last_frame].dispose == DISPOSE_BACKGROUND ||
+        _fi->frames[last_frame].dispose == DISPOSE_PREVIOUS)) ||
+        (_frame == 0 )) {
       if (canvas()->parent()) {
         canvas()->parent()->redraw();
       } else {
