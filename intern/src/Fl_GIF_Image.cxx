@@ -31,11 +31,6 @@
 #include "fl_gif_private.H"  // GIFLIB decoding functions
 #include <cmath> // lround()
 
-// Use this define to create a version with minimal memory usage
-// by storing frame data not as canvas-sized images but as defined.
-// The drawbacks are higher cpu usage during playback and maybe
-// minor artefacts when resized.
-//#define ANIMGIF_MINIMAL_UPDATE
 
 //
 // This routine is a modified version of DGifSlurp()
@@ -414,6 +409,7 @@ struct FrameInfo {
     average_color(FL_BLACK),
     average_weight(-1),
     debug(false),
+    optimize_mem(false),
     offscreen(0) {}
   int frames_size;                         // number of frames stored in 'frames'
   GifFrame *frames;                        // "vector" for frames
@@ -427,6 +423,7 @@ struct FrameInfo {
   Fl_Color average_color;                  // color for color_average()
   float average_weight;                    // weight for color_average (negative: none)
   bool debug;                              // Flag for debug outputs
+  bool optimize_mem;                       // Flag to store frames in original dimensions
   uchar *offscreen;                        // internal "offscreen" buffer to build frames
 };
 
@@ -520,6 +517,7 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
     return; // failed to load in base class
   }
   _fi->debug = (flags_ & Debug);
+  _fi->optimize_mem = (flags_ & OptimizeMemory);
   load(name_);
   if (canvas_w() && canvas_h()) {
     if (!w() && !h()) {
@@ -641,20 +639,21 @@ bool Fl_Anim_GIF_Image::next_frame() {
 /*virtual*/
 void Fl_Anim_GIF_Image::draw(int x_, int y_, int w_, int h_, int cx_/* = 0*/, int cy_/* = 0*/) {
   if (this->image()) {
-#ifdef ANIMGIF_MINIMAL_UPDATE
-    int f0 = _frame;
-    while (f0 > 0 && !(_fi->frames[f0].x == 0 && _fi->frames[f0].y == 0 &&
+    if (_fi->optimize_mem) {
+      int f0 = _frame;
+      while (f0 > 0 && !(_fi->frames[f0].x == 0 && _fi->frames[f0].y == 0 &&
                        _fi->frames[f0].w == w() && _fi->frames[f0].h == h()))
-      --f0;
-    for (int f = f0; f <= _frame; f++) {
-       Fl_RGB_Image *rgb = _fi->frames[f].rgb;
-       if (rgb) {
-         rgb->draw(x_ + _fi->frames[f].x, y_ + _fi->frames[f].y, w_, h_, cx_, cy_);
-       }
+        --f0;
+      for (int f = f0; f <= _frame; f++) {
+         Fl_RGB_Image *rgb = _fi->frames[f].rgb;
+         if (rgb) {
+           rgb->draw(x_ + _fi->frames[f].x, y_ + _fi->frames[f].y, w_, h_, cx_, cy_);
+         }
+      }
     }
-#else
-    this->image()->draw(x_, y_, w_, h_, cx_, cy_);
-#endif
+    else {
+      this->image()->draw(x_, y_, w_, h_, cx_, cy_);
+    }
   } else {
     Inherited::draw(x_, y_, w_, h_, cx_, cy_);
   }
@@ -762,21 +761,22 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
       }
     }
     // create RGB image from offscreen
-#ifdef ANIMGIF_MINIMAL_UPDATE
-    uchar *buf = new uchar[frame.w * frame.h * 4];
-    uchar *dest = buf;
-    for (int y = frame.y; y < frame.y + frame.h; y++) {
-      for (int x = frame.x; x < frame.x + frame.w; x++) {
-        memcpy(dest, &_fi->offscreen[y * w() * 4 + x * 4], 4);
-        dest += 4;
+    if (_fi->optimize_mem) {
+      uchar *buf = new uchar[frame.w * frame.h * 4];
+      uchar *dest = buf;
+      for (int y = frame.y; y < frame.y + frame.h; y++) {
+        for (int x = frame.x; x < frame.x + frame.w; x++) {
+          memcpy(dest, &_fi->offscreen[y * w() * 4 + x * 4], 4);
+          dest += 4;
+        }
       }
+      frame.rgb = new Fl_RGB_Image(buf, frame.w, frame.h, 4);
     }
-    frame.rgb = new Fl_RGB_Image(buf, frame.w, frame.h, 4);
-#else
-    uchar *buf = new uchar[w() * h() * 4];
-    memcpy(buf, _fi->offscreen, w() * h() * 4);
-    frame.rgb = new Fl_RGB_Image(buf, w(), h(), 4);
-#endif
+    else {
+      uchar *buf = new uchar[w() * h() * 4];
+      memcpy(buf, _fi->offscreen, w() * h() * 4);
+      frame.rgb = new Fl_RGB_Image(buf, w(), h(), 4);
+    }
     frame.rgb->alloc_array = 1;
 
     if (!push_back_frame(_fi, &frame)) {
@@ -901,25 +901,24 @@ void Fl_Anim_GIF_Image::cb_animate(void *d_) {
 /*virtual*/
 Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
   Fl_Anim_GIF_Image *copied = new Fl_Anim_GIF_Image();
-#ifdef ANIMGIF_MINIMAL_UPDATE
-  double scale_factor_x = (double)W_ / (double)w();
-  double scale_factor_y = (double)H_ / (double)h();
-#endif
   for (int i = 0; i < _fi->frames_size; i++) {
     if (!push_back_frame(copied->_fi, &_fi->frames[i])) {
       break;
     }
-#ifdef ANIMGIF_MINIMAL_UPDATE
-    copied->_fi->frames[i].x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
-    copied->_fi->frames[i].y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
-    int new_w = (int)((double)_fi->frames[i].w * scale_factor_x + .5);
-    int new_h = (int)((double)_fi->frames[i].h * scale_factor_y + .5);
-    copied->_fi->frames[i].w = new_w;
-    copied->_fi->frames[i].h = new_h;
-    copied->_fi->frames[i].rgb = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(new_w, new_h);
-#else
-    copied->_fi->frames[i].rgb = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(W_, H_);
-#endif
+    if (_fi->optimize_mem) {
+      double scale_factor_x = (double)W_ / (double)w();
+      double scale_factor_y = (double)H_ / (double)h();
+      copied->_fi->frames[i].x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
+      copied->_fi->frames[i].y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
+      int new_w = (int)((double)_fi->frames[i].w * scale_factor_x + .5);
+      int new_h = (int)((double)_fi->frames[i].h * scale_factor_y + .5);
+      copied->_fi->frames[i].w = new_w;
+      copied->_fi->frames[i].h = new_h;
+      copied->_fi->frames[i].rgb = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(new_w, new_h);
+    }
+    else {
+      copied->_fi->frames[i].rgb = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(W_, H_);
+    }
   }
   copied->w(W_);
   copied->h(H_);
@@ -939,25 +938,24 @@ Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(int W_, int H_) {
   if (!W || !H || ((W == w() && H == h()))) {
     return *this;
   }
-#ifdef ANIMGIF_MINIMAL_UPDATE
-  double scale_factor_x = (double)W_ / (double)w();
-  double scale_factor_y = (double)H_ / (double)h();
-#endif
   for (int i=0; i < _fi->frames_size; i++) {
     Fl_RGB_Image *rgb =  _fi->frames[i].rgb;
-#ifdef ANIMGIF_MINIMAL_UPDATE
-    int new_x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
-    int new_y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
-    int new_w = (int)((double)_fi->frames[i].w * scale_factor_x + .5);
-    int new_h = (int)((double)_fi->frames[i].h * scale_factor_y + .5);
-    _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(new_w, new_h);
-    _fi->frames[i].x = new_x;
-    _fi->frames[i].h = new_y;
-    _fi->frames[i].w = new_w;
-    _fi->frames[i].h = new_h;
-#else
-    _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(W_, H_);
-#endif
+    if (_fi->optimize_mem) {
+      double scale_factor_x = (double)W_ / (double)w();
+      double scale_factor_y = (double)H_ / (double)h();
+      int new_x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
+      int new_y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
+      int new_w = (int)((double)_fi->frames[i].w * scale_factor_x + .5);
+      int new_h = (int)((double)_fi->frames[i].h * scale_factor_y + .5);
+      _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(new_w, new_h);
+      _fi->frames[i].x = new_x;
+      _fi->frames[i].h = new_y;
+      _fi->frames[i].w = new_w;
+      _fi->frames[i].h = new_h;
+    }
+    else {
+      _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(W_, H_);
+    }
   }
   w(W_);
   h(H_);

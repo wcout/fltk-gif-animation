@@ -40,6 +40,7 @@ static void cb_forced_redraw(void *d_) {
 Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
   bool uncache = strchr(flags_, 'u');
   bool debug = strchr(flags_, 'd');
+  bool optimize_mem = strchr(flags_, 'm');
   bool desaturate = strchr(flags_, 'D');
   bool average = strchr(flags_, 'A');
   bool test_tiles = strchr(flags_, 'T');
@@ -52,7 +53,11 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
     win->callback(quit_cb);
   printf("\nLoading '%s'%s ... ", name_, uncache ? " (uncached)" : "");
   Fl_Box *canvas = test_tiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas for animation
-  Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, (debug ? Fl_Anim_GIF_Image::Debug : 0));
+  unsigned short flags = debug ? Fl_Anim_GIF_Image::Debug : 0;
+  if (optimize_mem) {
+    flags |= Fl_Anim_GIF_Image::OptimizeMemory;
+  }
+  Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, flags);
   printf("%s\n", animgif->valid() ? "OK" : "ERROR" );
   win->user_data(animgif); // store address of image (see note in main())
   animgif->uncache(uncache);

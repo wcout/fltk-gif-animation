@@ -25,7 +25,15 @@ public:
     Start = 1,
     Debug = 2,
     DontResizeCanvas = 4,
-    DontSetAsImage = 8
+    DontSetAsImage = 8,
+    /**
+     This flag indicates to the loader to try using less memory,
+     by storing frame data not as canvas-sized images but as defined
+     in the GIF file.
+     The drawbacks are higher cpu usage during playback and maybe
+     minor artefacts when resized.
+     */
+    OptimizeMemory = 16
   };
   /**
    The constructor create an new animated gif object from
