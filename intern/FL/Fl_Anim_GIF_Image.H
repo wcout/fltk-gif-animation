@@ -21,15 +21,40 @@ class Fl_Widget;
 class Fl_Anim_GIF_Image : public Fl_GIF_Image {
   typedef Fl_GIF_Image Inherited;
 public:
+  /**
+   When opening a Fl_Anim_GIF_Image there are some options
+   that can be passed in a 'flags' value.
+   */
   enum Flags {
+    /**
+     This flag indicates to the loader that it should start
+     the animation immediately after successful load.
+     */
     Start = 1,
+    /**
+     This flag can be used to print informations about the
+     decoding process to the console.
+     */
     Debug = 2,
+    /**
+     This flag indicates to the loader that it should not
+     resize the canvas widget of the animation to the dimensions
+     of the animation, which is the default.
+     Needed for special use cases
+     */
     DontResizeCanvas = 4,
+    /**
+     This flag indicates to the loader that it should not
+     set the animation as image() member of the canvas widget,
+     which is the default.
+     Needed for special use cases.
+     */
     DontSetAsImage = 8,
     /**
+     Often frames change just a small area of the animation canvas.
      This flag indicates to the loader to try using less memory,
-     by storing frame data not as canvas-sized images but as defined
-     in the GIF file.
+     by storing frame data not as canvas-sized images but use the
+     sizes defined in the GIF file.
      The drawbacks are higher cpu usage during playback and maybe
      minor artefacts when resized.
      */
