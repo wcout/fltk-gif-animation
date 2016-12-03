@@ -83,7 +83,8 @@ int main(int argc_, char *argv_[]) {
   orig = new Fl_Anim_GIF_Image(/*name_=*/ argv_[1],
                              /*canvas_=*/ &canvas,
                               /*flags_=*/ Fl_Anim_GIF_Image::Start |
-                                          Fl_Anim_GIF_Image::DontResizeCanvas);
+                                          Fl_Anim_GIF_Image::DontResizeCanvas |
+                                          ((argc_ > 3) ? Fl_Anim_GIF_Image::OptimizeMemory : 0));
   if (argc_ > 2) {
     Fl_RGB_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
     printf("Using bilinear scaling - can be slow!\n");

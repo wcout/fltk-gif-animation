@@ -645,10 +645,12 @@ void Fl_Anim_GIF_Image::draw(int x_, int y_, int w_, int h_, int cx_/* = 0*/, in
                        _fi->frames[f0].w == w() && _fi->frames[f0].h == h()))
         --f0;
       for (int f = f0; f <= _frame; f++) {
-         Fl_RGB_Image *rgb = _fi->frames[f].rgb;
-         if (rgb) {
-           rgb->draw(x_ + _fi->frames[f].x, y_ + _fi->frames[f].y, w_, h_, cx_, cy_);
-         }
+        if (f < _frame && _fi->frames[f].dispose == DISPOSE_PREVIOUS) continue;
+        if (f < _frame && _fi->frames[f].dispose == DISPOSE_BACKGROUND) continue;
+        Fl_RGB_Image *rgb = _fi->frames[f].rgb;
+        if (rgb) {
+          rgb->draw(x_ + _fi->frames[f].x, y_ + _fi->frames[f].y, w_, h_, cx_, cy_);
+        }
       }
     }
     else {
@@ -847,6 +849,18 @@ Fl_Image *Fl_Anim_GIF_Image::image(int frame_) const {
   return 0;
 }
 
+int Fl_Anim_GIF_Image::image_x(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].x;
+  return -1;
+}
+
+int Fl_Anim_GIF_Image::image_y(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].y;
+  return -1;
+}
+
 Fl_Widget *Fl_Anim_GIF_Image::canvas() const {
   return _canvas;
 }
@@ -924,6 +938,7 @@ Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
   copied->h(H_);
   copied->_fi->canvas_w = W_;
   copied->_fi->canvas_h = H_;
+  copied->_fi->optimize_mem = _fi->optimize_mem;
   copied->_valid = _valid && copied->_fi->frames_size == _fi->frames_size;
   return copied;
 }

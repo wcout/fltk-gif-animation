@@ -51,7 +51,9 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
   win->color(BackGroundColor);
   if (close_)
     win->callback(quit_cb);
-  printf("\nLoading '%s'%s ... ", name_, uncache ? " (uncached)" : "");
+  printf("\nLoading '%s'%s%s ... ", name_,
+    uncache ? " (uncached)" : "",
+    optimize_mem ? " (optimized)" : "");
   Fl_Box *canvas = test_tiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas for animation
   unsigned short flags = debug ? Fl_Anim_GIF_Image::Debug : 0;
   if (optimize_mem) {
@@ -116,7 +118,11 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
       win->copy_tooltip(buf);
       win->copy_label(buf);
       win->color(BackGroundColor);
-      Fl_Box *b = new Fl_Box(0, 0, win->w(), win->h());
+      int w = animgif->image(i)->w();
+      int h = animgif->image(i)->h();
+      int x = (w == animgif->w() && h == animgif->h()) ? 0 : animgif->image_x(i);
+      int y = (w == animgif->w() && h == animgif->h()) ? 0 : animgif->image_y(i);
+      Fl_Box *b = new Fl_Box(x, y, w, h);
       b->image(animgif->image(i));
       win->end();
       win->show();

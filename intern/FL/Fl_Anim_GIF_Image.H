@@ -99,6 +99,11 @@ public:
    */
   Fl_Image *image(int frame_) const;
   /**
+   Return the frame position of frame 'frame_'
+   */
+  int image_x(int frame_) const;
+  int image_y(int frame_) const;
+  /**
    Return the name of the played file as specified in the constructor.
    */
   const char *name() const;
