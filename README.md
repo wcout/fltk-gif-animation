@@ -83,6 +83,10 @@ Issues remaining:
   - `copy()` has also been implemented now. See usage with test program
     `animgifimage-resize`. Scaling large GIF's can be pretty slow though...
 
+*Update 2016/12/03:*
+
+  Finished *all* tasks. Solution 2 is complete now.
+
 ## Test
 
 You can test the different solutions with the test programs in each folder.
