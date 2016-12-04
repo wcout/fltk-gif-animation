@@ -38,6 +38,7 @@ static void cb_forced_redraw(void *d_) {
 }
 
 Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
+  // determine test options from 'flags_'
   bool uncache = strchr(flags_, 'u');
   bool debug = strchr(flags_, 'd');
   bool optimize_mem = strchr(flags_, 'm');
@@ -46,6 +47,8 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
   bool test_tiles = strchr(flags_, 'T');
   bool test_forced_redraw = strchr(flags_, 'f');
   bool resizable = !test_tiles && strchr(flags_, 'r');
+
+  // setup window
   Fl::remove_timeout(cb_forced_redraw);
   Fl_Double_Window *win = new Fl_Double_Window(100, 100);
   win->color(BackGroundColor);
@@ -54,6 +57,8 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
   printf("\nLoading '%s'%s%s ... ", name_,
     uncache ? " (uncached)" : "",
     optimize_mem ? " (optimized)" : "");
+
+  // create animation
   Fl_Box *canvas = test_tiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas for animation
   unsigned short flags = debug ? Fl_Anim_GIF_Image::Debug : 0;
   if (optimize_mem) {
@@ -62,6 +67,8 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
   Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, flags);
   printf("%s\n", animgif->valid() ? "OK" : "ERROR" );
   win->user_data(animgif); // store address of image (see note in main())
+
+  // exercise the optional tests on the animation
   animgif->uncache(uncache);
   if (resizable) // note: bug in FLTK (STR 3352) - test resize functionality here
     animgif->resize(0.7); // hardcoded for now!
@@ -95,11 +102,14 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
       }
     }
 #if 0
+    // make window resizable
     // NOTE: can't do this currently (FLTK bug STR 3352)
     if (resizable && canvas) {
       win->resizable(canvas);
     }
 #endif
+
+    // start the animation
     win->end();
     set_title(win, animgif);
     win->show();
@@ -111,6 +121,7 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
     return 0;
   }
   if (debug) {
+    // open each frame in a separate window
     for (int i = 0; i < animgif->frames(); i++) {
       char buf[200];
       snprintf(buf, sizeof(buf), "Frame #%d", i + 1);
@@ -120,9 +131,11 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
       win->color(BackGroundColor);
       int w = animgif->image(i)->w();
       int h = animgif->image(i)->h();
+      // in 'optimize_mem' mode frames must be offsetted to canvas
       int x = (w == animgif->w() && h == animgif->h()) ? 0 : animgif->image_x(i);
       int y = (w == animgif->w() && h == animgif->h()) ? 0 : animgif->image_y(i);
       Fl_Box *b = new Fl_Box(x, y, w, h);
+      // get the frame image
       b->image(animgif->image(i));
       win->end();
       win->show();
@@ -156,7 +169,7 @@ static void change_speed(bool up_) {
   Fl_Widget *below = Fl::belowmouse();
   if (below && below->image()) {
     Fl_Anim_GIF_Image *animgif = 0;
-    // is there a way without dynamic cast to determine Fl_Tiled_Image?
+    // Q: is there a way to determine Fl_Tiled_Image without using dynamic cast?
     Fl_Tiled_Image *tiled = dynamic_cast<Fl_Tiled_Image *>(below->image());
     animgif = tiled ?
               dynamic_cast<Fl_Anim_GIF_Image *>(tiled->image()) :
@@ -192,9 +205,11 @@ int main(int argc_, char *argv_[]) {
   if (argc_ > 1) {
     if (strstr(argv_[1], "-h")) {
       printf("Usage:\n"
-             "   -t [directory] [-u]   open all files in directory (default name: %s) [uncached]\n"
-             "   filename [-d][-T][-D] open single file [in debug mode] [as tiled image] [desaturated]\n"
-             "   No arguments open fileselector\n"
+             "   -t [directory] [-{flags}] open all files in directory (default name: %s) [with options]\n"
+             "   filename [-{flags}] open single file [with options] \n"
+             "   No arguments open a fileselector\n"
+             "   {flags} can be: d=debug mode, u=uncached, D=desaturated, A=color averaged, T=tiled\n"
+             "                   m=minimal update, r=resized\n"
              "   Use keys '+'/'-' to change speed of the active image.\n", testsuite);
       exit(1);
     }
@@ -221,13 +236,13 @@ int main(int argc_, char *argv_[]) {
       Fl_Window *win = openFile(filename, openFlags);
       Fl::run();
       // delete last window (which is now just hidden) to test destructors
-      // NOTE: it is essential, that before doing this also the
+      // NOTE: it is essential that *before* doing this also the
       //       animated image is destroyed, otherwise it will crash
       //       because it's canvas will be gone.
       //       In order to keep this demo simple, the adress of the
       //       Fl_Anim_GIF_Image has been stored in the window's user_data.
-      //       In a real-life application you you will probably store
-      //       is somewhere in the window's or canvas' object and destroy
+      //       In a real-life application you will probably store
+      //       it somewhere in the window's or canvas' object and destroy
       //       the image in the window's or cavas' destructor.
       if (win->user_data())
         delete ((Fl_Anim_GIF_Image *)win->user_data());

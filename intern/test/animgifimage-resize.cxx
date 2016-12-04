@@ -102,4 +102,6 @@ int main(int argc_, char *argv_[]) {
   printf("%s: valid: %d frames: %d\n", orig->name(), orig->valid(), orig->frames());
   if (orig->valid())
     return Fl::run();
+  else
+    printf("Usage:\n%s filename [scale mode: 0=default 1=bilienar] [minimal update: any value]\n", argv_[0]);
 }
