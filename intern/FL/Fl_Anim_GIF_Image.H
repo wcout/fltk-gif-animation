@@ -61,7 +61,7 @@ public:
     OptimizeMemory = 16
   };
   /**
-   The constructor create an new animated gif object from
+   The constructor creates an new animated gif object from
    the given file.
    Optionally it applies the canvas() method after successful load.
    See canvas().
@@ -129,6 +129,12 @@ public:
   int image_x(int frame_) const;
   int image_y(int frame_) const;
   /**
+   The load() method is either used from the constructor to load
+   the image from the given file, or to re-load an existing
+   animation from another file.
+   */
+  bool load(const char *name_);
+  /**
    Return the name of the played file as specified in the constructor.
    */
   const char *name() const;
@@ -185,11 +191,6 @@ public:
 protected:
   bool next_frame();
   void clear_frames();
-  /**
-   The load() is used from the constructor to load
-   the image from file.
-   */
-  bool load(const char *name_);
   void set_frame(int frame_);
 private:
   static void cb_animate(void *d_);

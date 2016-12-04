@@ -506,7 +506,7 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
                                      Fl_Widget *canvas_/* = 0*/,
                                      unsigned short flags_/* = 0 */) :
   Inherited(name_, 1),
-  _name(name_ ? strdup(name_) : 0),
+  _name(0),
   _canvas(canvas_),
   _uncache(false),
   _valid(false),
@@ -664,24 +664,18 @@ void Fl_Anim_GIF_Image::draw(int x_, int y_, int w_, int h_, int cx_/* = 0*/, in
 bool Fl_Anim_GIF_Image::load(const char *name_) {
   DEBUG(("\nFl_Anim_GIF_Image::load '%s'\n", name_));
   clear_frames();
-
-  // open gif file for readin
-  int errorCode(0);
-  GifFileType *gifFileIn = (GifFileType *)gif_handle;
-  if (!gifFileIn) {
-    Inherited::load(name_);
-    gifFileIn = (GifFileType *)gif_handle;
-  }
-  if (gifFileIn == NULL) {
-    fprintf(stderr, "open '%s': %s\n", name_, GifErrorString(errorCode));
+  free(_name);
+  _name = name_ ? strdup(name_) : 0;
+  if (!Inherited::load(name_, true))
     return false;
-  }
+  GifFileType *gifFileIn = (GifFileType *)gif_handle;
   DEBUG(("%d x %d  BG=%d aspect %d\n", gifFileIn->SWidth, gifFileIn->SHeight, gifFileIn->SBackGroundColor, gifFileIn->AspectByte));
   _fi->canvas_w = gifFileIn->SWidth;
   _fi->canvas_h = gifFileIn->SHeight;
   w(_fi->canvas_w);
   h(_fi->canvas_h);
   free(_fi->offscreen);
+  _frame = -1;
   _fi->offscreen = (uchar *)calloc(_fi->canvas_w * _fi->canvas_h * 4, 1);
   _fi->background_color_index = gifFileIn->SColorMap ? gifFileIn->SBackGroundColor : -1;
   if (_fi->background_color_index >= 0) {
