@@ -190,10 +190,12 @@ static int events(int event_) {
   if (event_ == FL_SHORTCUT) {
     if (Fl::event_key() == '+')
       change_speed(true);
-    if (Fl::event_key() == '-')
+    else if (Fl::event_key() == '-')
       change_speed(false);
+    else
+      return 0;
   }
-  return 0;
+  return 1;
 }
 
 static const char testsuite[] = "testsuite";

@@ -175,6 +175,18 @@ Fl_GIF_Image::Fl_GIF_Image() : Fl_Pixmap((char *const*)0),
 
 bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
   close_gif_file();
+
+  // as load() can be called multiple times
+  // we have to replicate the actions of the pixmap destructor here
+  uncache();
+  if (alloc_data) {
+    for (int i = 0; i < count(); i ++) delete[] (char *)data()[i];
+    delete[] (char **)data();
+  }
+  alloc_data = 0;
+  w(0);
+  h(0);
+
   GifFileType *gifFileIn;
   int errorCode;
   if (!infname || (gifFileIn = DGifOpenFileName(infname, &errorCode)) == NULL) {
@@ -629,7 +641,7 @@ bool Fl_Anim_GIF_Image::next_frame() {
     return false;
   set_frame(frame);
   double delay = _fi->frames[frame].delay;
-  if (delay > 0 && _speed > 0) {  // normal GIF has no delay
+  if (_fi->frames_size > 1 && delay > 0 && _speed > 0) {  // normal GIF has no delay
     delay /= _speed;
     Fl::add_timeout(delay, cb_animate, this);
   }
