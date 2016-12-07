@@ -855,13 +855,13 @@ Fl_Image *Fl_Anim_GIF_Image::image(int frame_) const {
   return 0;
 }
 
-int Fl_Anim_GIF_Image::image_x(int frame_) const {
+int Fl_Anim_GIF_Image::x(int frame_) const {
   if (frame_ >= 0 && frame_ < frames())
     return _fi->frames[frame_].x;
   return -1;
 }
 
-int Fl_Anim_GIF_Image::image_y(int frame_) const {
+int Fl_Anim_GIF_Image::y(int frame_) const {
   if (frame_ >= 0 && frame_ < frames())
     return _fi->frames[frame_].y;
   return -1;

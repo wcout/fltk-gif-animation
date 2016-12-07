@@ -126,8 +126,8 @@ public:
   /**
    Return the frame position of frame 'frame_'
    */
-  int image_x(int frame_) const;
-  int image_y(int frame_) const;
+  int x(int frame_) const;
+  int y(int frame_) const;
   /**
    The load() method is either used from the constructor to load
    the image from the given file, or to re-load an existing
