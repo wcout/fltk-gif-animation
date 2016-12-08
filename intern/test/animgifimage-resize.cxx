@@ -80,11 +80,14 @@ int main(int argc_, char *argv_[]) {
   // create/load the animated gif and start it immediately.
   // We use the 'DontResizeCanvas' flag here to tell the
   // animation not to change the canvas size (which is the default).
+  int flags = Fl_Anim_GIF_Image::Start | Fl_Anim_GIF_Image::DontResizeCanvas;
+  if (argc_ > 3) {
+    flags |= Fl_Anim_GIF_Image::OptimizeMemory;
+    printf("Using memory optimization (if image supports)\n");
+  }
   orig = new Fl_Anim_GIF_Image(/*name_=*/ argv_[1],
                              /*canvas_=*/ &canvas,
-                              /*flags_=*/ Fl_Anim_GIF_Image::Start |
-                                          Fl_Anim_GIF_Image::DontResizeCanvas |
-                                          ((argc_ > 3) ? Fl_Anim_GIF_Image::OptimizeMemory : 0));
+                              /*flags_=*/ flags );
   if (argc_ > 2) {
     Fl_RGB_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
     printf("Using bilinear scaling - can be slow!\n");
@@ -100,8 +103,14 @@ int main(int argc_, char *argv_[]) {
 
   // check if loading succeeded
   printf("%s: valid: %d frames: %d\n", orig->name(), orig->valid(), orig->frames());
-  if (orig->valid())
+  if (orig->valid()) {
+    int n = 0;
+    for (int i = 0; i < orig->frames(); i++) {
+      if (orig->x(i) != 0 || orig->y(i) != 0) n++;
+    }
+    printf("image has %d optimized frames\n", n);
     return Fl::run();
+  }
   else
-    printf("Usage:\n%s filename [scale mode: 0=default 1=bilienar] [minimal update: any value]\n", argv_[0]);
+    printf("Usage:\n%s filename [scale mode bilinear: any value] [minimal update: any value]\n", argv_[0]);
 }
