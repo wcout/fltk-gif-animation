@@ -9,8 +9,9 @@
 //
 //  Multiple files can be specified e.g. testsuite/*
 //
-//  Use keys '+'/'-'/Enter to change speed. 'n' to change
-//  to next file, 'r' to toggle reverse play.
+//  Use keys '+'/'-'/Enter to change speed, ' ' to pause.
+//  Right key changes to next frame in paused mode.
+//  'n' changes to next file, 'r' toggles reverse play.
 //
 #include <FL/Fl_Anim_GIF_Image.H>
 #include <FL/Fl_Box.H>
@@ -21,6 +22,7 @@
 
 static double speed_factor = 1.; // slow down/speed up playback by factor
 static bool reverse = false;  // true = play animation backwards
+static bool paused = false;  // flag for paused animation
 static Fl_Anim_GIF_Image animgif; // the animation object
 static char **argv = 0; // copy of main() argv[]
 static int argc = 0;    // copy of main() argc
@@ -40,6 +42,16 @@ static int next_arg() {
 static const char *next_file() {
   while (argv[next_arg()][0] == '-') ;
   return argv[current_arg];
+}
+
+static void set_title() {
+  char buf[200];
+  snprintf(buf, sizeof(buf), "%s (frame %d/%d) x %3.2f %s%s",
+    argv[current_arg], animgif.frame() + 1, animgif.frames(),
+    speed_factor, reverse ? "reverse" : "",
+    paused ? " PAUSED" : "");
+
+  Fl::first_window()->copy_label(buf);
 }
 
 static void cb_anim(void *d_) {
@@ -64,16 +76,24 @@ static void cb_anim(void *d_) {
   animgif->frame(frame);
 
   // setup timer for next frame
-  if (animgif->delay(frame)) {
+  if (!paused && animgif->delay(frame)) {
     Fl::repeat_timeout(animgif->delay(frame) / speed_factor, cb_anim, d_);
   }
+  set_title();
 }
 
-static void set_title() {
-  char buf[200];
-  snprintf(buf, sizeof(buf), "%s (%d frames) x %3.2f %s",
-    argv[current_arg], animgif.frames(), speed_factor, reverse ? "reverse" : "");
-  Fl::first_window()->copy_label(buf);
+static void next_frame() {
+  cb_anim(&animgif);
+}
+
+static void toggle_pause() {
+  paused = !paused;
+  set_title();
+  if (paused)
+    Fl::remove_timeout(cb_anim, &animgif);
+  else
+    next_frame();
+  set_title();
 }
 
 static void toggle_reverse() {
@@ -100,6 +120,7 @@ static void change_speed(int dir_) {
 
 static void load_next() {
   Fl::remove_timeout(cb_anim, &animgif);
+  paused = false;
   animgif.load(next_file());
   animgif.canvas()->window()->redraw();
   // check if loading succeeded
@@ -128,6 +149,10 @@ static int events(int event_) {
       load_next();
     else if (Fl::event_key() == 'r')
       toggle_reverse();
+    else if (Fl::event_key() == ' ')
+      toggle_pause();
+    else if (paused && Fl::event_key() == FL_Right)
+      next_frame();
     else
       return 0;
   }
