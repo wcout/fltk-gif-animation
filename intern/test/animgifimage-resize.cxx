@@ -9,7 +9,8 @@
 #include <FL/fl_draw.H>
 #include <cstdio>
 
-Fl_Anim_GIF_Image *orig = 0;
+static Fl_Anim_GIF_Image *orig = 0;
+static bool draw_grid = true;
 
 class Canvas : public Fl_Box {
   typedef Fl_Box Inherited;
@@ -17,14 +18,16 @@ public:
   Canvas(int x_, int y_, int w_, int h_) :
     Inherited(x_, y_, w_, h_) {}
   virtual void draw() {
-    // draw a transparency grid as background
-    static const Fl_Color C1 = fl_rgb_color(0xcc, 0xcc, 0xcc);
-    static const Fl_Color C2 = fl_rgb_color(0x88, 0x88, 0x88);
-    static const int SZ = 8;
-    for (int y = 0; y < h(); y += SZ) {
-      for (int x = 0; x < w(); x += SZ) {
-        fl_color(x%(SZ * 2) ? y%(SZ * 2) ? C1 : C2 : y%(SZ * 2) ? C2 : C1);
-        fl_rectf(x, y, 32, 32);
+    if (draw_grid) {
+      // draw a transparency grid as background
+      static const Fl_Color C1 = fl_rgb_color(0xcc, 0xcc, 0xcc);
+      static const Fl_Color C2 = fl_rgb_color(0x88, 0x88, 0x88);
+      static const int SZ = 8;
+      for (int y = 0; y < h(); y += SZ) {
+        for (int x = 0; x < w(); x += SZ) {
+          fl_color(x%(SZ * 2) ? y%(SZ * 2) ? C1 : C2 : y%(SZ * 2) ? C2 : C1);
+          fl_rectf(x, y, 32, 32);
+        }
       }
     }
     // draw the current image frame over the grid
@@ -67,6 +70,26 @@ public:
 };
 
 int main(int argc_, char *argv_[]) {
+  // setup play parameters from args
+  const char *fileName = 0;
+  bool bilinear = false;
+  bool optimize = false;
+  for (int i = 1; i < argc_; i++) {
+    if (!strcmp(argv_[i], "-b")) // turn bilinear scaling on
+      bilinear = true;
+    else if (!strcmp(argv_[i], "-m")) // turn optimize on
+      optimize = true;
+    else if (!strcmp(argv_[i], "-g")) // disable grid
+      draw_grid = false;
+    else if (argv_[i][0] != '-' && !fileName) {
+      fileName = argv_[i];
+    }
+  }
+  if (!fileName) {
+    fprintf(stderr, "Usage: %s fileName [-b] [-m] [-g]\n", argv_[0]);
+    exit(0);
+  }
+
   Fl_Double_Window win(640, 480, "test animated copy");
 
   // prepare a canvas for the animation
@@ -81,14 +104,14 @@ int main(int argc_, char *argv_[]) {
   // We use the 'DontResizeCanvas' flag here to tell the
   // animation not to change the canvas size (which is the default).
   int flags = Fl_Anim_GIF_Image::Start | Fl_Anim_GIF_Image::DontResizeCanvas;
-  if (argc_ > 3) {
+  if (optimize) {
     flags |= Fl_Anim_GIF_Image::OptimizeMemory;
     printf("Using memory optimization (if image supports)\n");
   }
   orig = new Fl_Anim_GIF_Image(/*name_=*/ argv_[1],
                              /*canvas_=*/ &canvas,
                               /*flags_=*/ flags );
-  if (argc_ > 2) {
+  if (bilinear) {
     Fl_RGB_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
     printf("Using bilinear scaling - can be slow!\n");
     // NOTE: this is *really* slow. Scaling the TrueColor test image
@@ -111,6 +134,4 @@ int main(int argc_, char *argv_[]) {
     printf("image has %d optimized frames\n", n);
     return Fl::run();
   }
-  else
-    printf("Usage:\n%s filename [scale mode bilinear: any value] [minimal update: any value]\n", argv_[0]);
 }
