@@ -641,7 +641,7 @@ bool Fl_Anim_GIF_Image::next_frame() {
     return false;
   set_frame(frame);
   double delay = _fi->frames[frame].delay;
-  if (_fi->frames_size > 1 && delay > 0 && _speed > 0) {  // normal GIF has no delay
+  if (is_animated() && delay > 0 && _speed > 0) {  // normal GIF has no delay
     delay /= _speed;
     Fl::add_timeout(delay, cb_animate, this);
   }
@@ -1001,6 +1001,10 @@ void Fl_Anim_GIF_Image::color_average(Fl_Color c_, float i_) {
 /*virtual*/
 void Fl_Anim_GIF_Image::desaturate() {
   _fi->desaturate = true;
+}
+
+bool Fl_Anim_GIF_Image::is_animated() const {
+  return _valid && _fi->frames_size > 1;
 }
 
 //

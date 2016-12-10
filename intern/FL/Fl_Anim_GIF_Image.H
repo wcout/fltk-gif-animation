@@ -124,10 +124,10 @@ public:
    */
   Fl_Image *image(int frame_) const;
   /**
-   Return the frame position of frame 'frame_'
+   The is_animated() method is just a convenience method for
+   testing the valid flag and the frame count beeing greater 1.
    */
-  int x(int frame_) const;
-  int y(int frame_) const;
+  bool is_animated() const;
   /**
    The load() method is either used from the constructor to load
    the image from the given file, or to re-load an existing
@@ -188,6 +188,11 @@ public:
    one frame.
    */
   bool valid() const;
+  /**
+   Return the frame position of frame 'frame_'
+   */
+  int x(int frame_) const;
+  int y(int frame_) const;
 protected:
   bool next_frame();
   void clear_frames();
