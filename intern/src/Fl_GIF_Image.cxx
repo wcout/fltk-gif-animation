@@ -32,7 +32,7 @@
 #include <cmath> // lround()
 
 /*static*/
-bool Fl_GIF_Image::animate = true;
+bool Fl_GIF_Image::animate = false;
 
 //
 // This routine is a modified version of DGifSlurp()
