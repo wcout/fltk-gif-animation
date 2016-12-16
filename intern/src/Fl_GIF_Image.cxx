@@ -930,11 +930,17 @@ Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
   // copy/resize the base image (Fl_Pixmap)
   // Note: this is not really necessary, if the draw()
   //       method never calls the base class.
-  Fl_Pixmap *gif = (Fl_Pixmap *)Inherited::copy(W_, H_);
-  copied->Inherited::data(gif->data(), gif->count());
-  copied->alloc_data = gif->alloc_data;
-  gif->alloc_data = 0;
-  delete gif;
+  if (_fi->frames_size) {
+    w(_fi->frames[0].w);
+    h(_fi->frames[0].h);
+    Fl_Pixmap *gif = (Fl_Pixmap *)Inherited::copy(W_, H_);
+    copied->Inherited::data(gif->data(), gif->count());
+    copied->alloc_data = gif->alloc_data;
+    gif->alloc_data = 0;
+    delete gif;
+    w(_fi->canvas_w);
+    h(_fi->canvas_h);
+  }
   // copy/resize the animated gif frames (Fl_RGB_Image array)
   for (int i = 0; i < _fi->frames_size; i++) {
     if (!push_back_frame(copied->_fi, &_fi->frames[i])) {
