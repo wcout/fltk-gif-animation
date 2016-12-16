@@ -45,6 +45,16 @@ public:
   */
   static bool is_animated(const char *name_);
 
+  /**
+   This variable can be set/unset from the application
+   to allow/disallow automatic creation of animated GIF
+   objects from the shared image module. If this variable
+   is on and a file with GIF extension is loaded through
+   the shared image interface, an Fl_Anim_GIF_Image is
+   created, otherwise a normal Fl_GIF_Image.
+   The default is off.
+  */
+  static bool animate;
 protected:
 
   bool load(const char* filename, bool anim = false);

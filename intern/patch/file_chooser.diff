@@ -1,0 +1,21 @@
+Index: ../../../fltk-1.3/test/file_chooser.cxx
+===================================================================
+diff --git a/branches/branch-1.3/test/file_chooser.cxx b/branches/branch-1.3/test/file_chooser.cxx
+--- a/branches/branch-1.3/test/file_chooser.cxx	(Revision 12122)
++++ b/branches/branch-1.3/test/file_chooser.cxx	(Arbeitskopie)
+@@ -37,6 +37,7 @@
+ #include <FL/Fl_File_Chooser.H>
+ #include <FL/Fl_File_Icon.H>
+ #include <FL/Fl_Shared_Image.H>
++#include <FL/Fl_GIF_Image.H>
+ #include <FL/Fl_PNM_Image.H>
+ #include <FL/Fl_Light_Button.H>
+ #include <FL/Fl_Double_Window.H>
+@@ -89,6 +90,7 @@
+ 
+ 
+   // Make the file chooser...
++  Fl_GIF_Image::animate = true; // allow creating animated GIF objects
+   Fl::scheme(NULL);
+   Fl_File_Icon::load_system_icons();
+ 

@@ -31,6 +31,8 @@
 #include "fl_gif_private.H"  // GIFLIB decoding functions
 #include <cmath> // lround()
 
+/*static*/
+bool Fl_GIF_Image::animate = true;
 
 //
 // This routine is a modified version of DGifSlurp()
