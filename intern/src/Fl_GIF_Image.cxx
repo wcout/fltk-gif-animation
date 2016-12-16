@@ -35,8 +35,8 @@
 bool Fl_GIF_Image::animate = false;
 
 //
-// This routine is a modified version of DGifSlurp()
-// that reads only one image per time.
+// This routine is a modified version of GIFLIB's
+// DGifSlurp(), that reads only one image per time.
 //
 
 static SavedImage *DGifSlurpImage(GifFileType *GifFile) {
@@ -166,7 +166,7 @@ typedef unsigned char uchar;
  GIF format could not be decoded, and ERR_NO_IMAGE if the image could not
  be loaded for another reason.
  */
-Fl_GIF_Image::Fl_GIF_Image(const char *infname, bool anim/*=false*/) : Fl_Pixmap((char *const*)0),
+Fl_GIF_Image::Fl_GIF_Image(const char *infname, bool anim/*= false*/) : Fl_Pixmap((char *const*)0),
   gif_handle(0) {
   load(infname, anim);
 }
@@ -749,7 +749,8 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
       return false;
     }
     frame.delay = convertDelay(_fi, gcb.DelayTime);
-    // we know now everything we need about the frame
+
+    // we know now everything we need about the frame..
     frame.transparent_color_index = gcb.TransparentColor;
     if (frame.transparent_color_index >= 0)
       frame.transparent_color = RGBA_Color(
@@ -809,7 +810,7 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   _frame = -1;
   memset(_fi->offscreen, 0, w() * h() * 4);
   return _valid;
-}         // load
+} // load
 
 int Fl_Anim_GIF_Image::canvas_w() const {
   return _fi->canvas_w;
@@ -886,7 +887,7 @@ void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, unsigned short flags_/* = 0*/
   if (_canvas && !(flags_ & DontResizeCanvas))
     _canvas->size(w(), h());
 
-  // Note: Use 'Start' flag is *NOT* used here,
+  // Note: 'Start' flag is *NOT* used here,
   //       but an already running animation is restarted.
   _frame = -1;
   if (Fl::has_timeout(cb_animate, this)) {
@@ -918,6 +919,7 @@ bool Fl_Anim_GIF_Image::uncache() const {
 bool Fl_Anim_GIF_Image::valid() const {
   return _valid;
 }
+
 /*static*/
 void Fl_Anim_GIF_Image::cb_animate(void *d_) {
   Fl_Anim_GIF_Image *b = (Fl_Anim_GIF_Image *)d_;
