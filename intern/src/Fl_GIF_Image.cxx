@@ -563,6 +563,7 @@ Fl_Anim_GIF_Image::~Fl_Anim_GIF_Image() {
 }
 
 bool Fl_Anim_GIF_Image::start() {
+  Fl::remove_timeout(cb_animate, this);
   if (_fi->frames_size) {
     next_frame();
   }
@@ -669,7 +670,10 @@ void Fl_Anim_GIF_Image::draw(int x_, int y_, int w_, int h_, int cx_/* = 0*/, in
       this->image()->draw(x_, y_, w_, h_, cx_, cy_);
     }
   } else {
-    Inherited::draw(x_, y_, w_, h_, cx_, cy_);
+    // Note: should the base class be called here?
+    //       If it is, then the copy() method must also
+    //       copy the base image!
+//    Inherited::draw(x_, y_, w_, h_, cx_, cy_);
   }
 }
 
@@ -921,6 +925,15 @@ void Fl_Anim_GIF_Image::cb_animate(void *d_) {
 /*virtual*/
 Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
   Fl_Anim_GIF_Image *copied = new Fl_Anim_GIF_Image();
+  // copy/resize the base image (Fl_Pixmap)
+  // Note: this is not really necessary, if the draw()
+  //       method never calls the base class.
+  Fl_Pixmap *gif = (Fl_Pixmap *)Inherited::copy(W_, H_);
+  copied->Inherited::data(gif->data(), gif->count());
+  copied->alloc_data = gif->alloc_data;
+  gif->alloc_data = 0;
+  delete gif;
+  // copy/resize the animated gif frames (Fl_RGB_Image array)
   for (int i = 0; i < _fi->frames_size; i++) {
     if (!push_back_frame(copied->_fi, &_fi->frames[i])) {
       break;
@@ -946,6 +959,8 @@ Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
   copied->_fi->canvas_h = H_;
   copied->_fi->optimize_mem = _fi->optimize_mem;
   copied->_valid = _valid && copied->_fi->frames_size == _fi->frames_size;
+  if (copied->_valid && _frame >= 0 && !Fl::has_timeout(cb_animate, copied))
+    copied->start(); // start if original also was started
   return copied;
 }
 
