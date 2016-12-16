@@ -35,6 +35,15 @@ public:
   Fl_GIF_Image(const char* filename, bool anim = false);
   Fl_GIF_Image();
   virtual ~Fl_GIF_Image();
+  /**
+   The static method is_animated() tests if a GIF file
+   contains more than one image. As there is no information
+   about the number of images a GIF file contains available
+   in the GIF header, this is achieved by first reading one
+   image of the file and if that succeeds trying to read a
+   second image and returning the result of this operation.
+  */
+  static bool is_animated(const char *name_);
 
 protected:
 

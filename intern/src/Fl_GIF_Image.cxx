@@ -1022,6 +1022,13 @@ bool Fl_Anim_GIF_Image::is_animated() const {
   return _valid && _fi->frames_size > 1;
 }
 
+/*static*/
+bool Fl_GIF_Image::is_animated(const char *name_) {
+  Fl_GIF_Image gif(name_, true);
+  if (gif.w() <= 0 || gif.h() <= 0) return false;
+  return gif.read_next_image(); // returns true if file has another frame
+}
+
 //
 // End of "$Id: Fl_GIF_Image.cxx 10751 2015-06-14 17:07:31Z AlbrechtS $".
 //
