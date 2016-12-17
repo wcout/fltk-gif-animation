@@ -1,0 +1,7 @@
+These are additional patches for FLTK-1.3.4 and FLTK-1.4,
+that are not required for the animated GIF functionality,
+but provide extra features:
+
+- load animated GIF from shared image handler
+- test animated GIF preview in filechooser demo
+- test animated GIF in help viewer demo
