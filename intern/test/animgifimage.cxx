@@ -231,6 +231,7 @@ int main(int argc_, char *argv_[]) {
           openFile(argv_[i], openFlags, strchr(openFlags, 'd'));
     }
   } else {
+    Fl_GIF_Image::animate = true; // create animated shared .GIF images (e.g. file chooser)
     while (1) {
       const char *filename = fl_file_chooser("Select a GIF image file","*.{gif,GIF}", NULL);
       if (!filename)
