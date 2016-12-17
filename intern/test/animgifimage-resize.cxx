@@ -74,6 +74,7 @@ int main(int argc_, char *argv_[]) {
   const char *fileName = 0;
   bool bilinear = false;
   bool optimize = false;
+  bool uncache = false;
   for (int i = 1; i < argc_; i++) {
     if (!strcmp(argv_[i], "-b")) // turn bilinear scaling on
       bilinear = true;
@@ -81,12 +82,14 @@ int main(int argc_, char *argv_[]) {
       optimize = true;
     else if (!strcmp(argv_[i], "-g")) // disable grid
       draw_grid = false;
+    else if (!strcmp(argv_[i], "-u")) // uncache
+      uncache = true;
     else if (argv_[i][0] != '-' && !fileName) {
       fileName = argv_[i];
     }
   }
   if (!fileName) {
-    fprintf(stderr, "Usage: %s fileName [-b] [-m] [-g]\n", argv_[0]);
+    fprintf(stderr, "Usage: %s fileName [-b] [-m] [-g] [-u]\n", argv_[0]);
     exit(0);
   }
 
@@ -108,7 +111,7 @@ int main(int argc_, char *argv_[]) {
     flags |= Fl_Anim_GIF_Image::OptimizeMemory;
     printf("Using memory optimization (if image supports)\n");
   }
-  orig = new Fl_Anim_GIF_Image(/*name_=*/ argv_[1],
+  orig = new Fl_Anim_GIF_Image(/*name_=*/ fileName,
                              /*canvas_=*/ &canvas,
                               /*flags_=*/ flags );
   if (bilinear) {
@@ -116,6 +119,10 @@ int main(int argc_, char *argv_[]) {
     printf("Using bilinear scaling - can be slow!\n");
     // NOTE: this is *really* slow. Scaling the TrueColor test image
     //       to full HD desktop takes about 45 seconds!
+  }
+  orig->frame_uncache(uncache);
+  if (uncache) {
+    printf("Caching disabled - watch cpu load!\n");
   }
 
   // set initial size to fit into window
@@ -125,7 +132,8 @@ int main(int argc_, char *argv_[]) {
   win.size(W, H);
 
   // check if loading succeeded
-  printf("%s: valid: %d frames: %d\n", orig->name(), orig->valid(), orig->frames());
+  printf("%s: valid: %d frames: %d uncache: %d\n",
+    orig->name(), orig->valid(), orig->frames(), orig->frame_uncache());
   if (orig->valid()) {
     int n = 0;
     for (int i = 0; i < orig->frames(); i++) {
