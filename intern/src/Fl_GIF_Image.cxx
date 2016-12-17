@@ -812,6 +812,28 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   return _valid;
 } // load
 
+Fl_Widget *Fl_Anim_GIF_Image::canvas() const {
+  return _canvas;
+}
+
+void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, unsigned short flags_/* = 0*/) {
+  if (_canvas)
+    _canvas->image(0);
+  _canvas = canvas_;
+  if (_canvas && !(flags_ & DontSetAsImage))
+    _canvas->image(this); // set animation as image() of canvas
+  if (_canvas && !(flags_ & DontResizeCanvas))
+    _canvas->size(w(), h());
+
+  // Note: 'Start' flag is *NOT* used here,
+  //       but an already running animation is restarted.
+  _frame = -1;
+  if (Fl::has_timeout(cb_animate, this)) {
+    Fl::remove_timeout(cb_animate, this);
+    next_frame();
+  }
+}
+
 int Fl_Anim_GIF_Image::canvas_w() const {
   return _fi->canvas_w;
 }
@@ -852,6 +874,14 @@ void Fl_Anim_GIF_Image::frame(int frame_) {
   }
 }
 
+void Fl_Anim_GIF_Image::frame_uncache(bool uncache_) {
+  _uncache = uncache_;
+}
+
+bool Fl_Anim_GIF_Image::frame_uncache() const {
+  return _uncache;
+}
+
 Fl_Image *Fl_Anim_GIF_Image::image() const {
   return _frame >= 0 && _frame < frames() ? _fi->frames[_frame].rgb : 0;
 }
@@ -862,39 +892,6 @@ Fl_Image *Fl_Anim_GIF_Image::image(int frame_) const {
   return 0;
 }
 
-int Fl_Anim_GIF_Image::x(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].x;
-  return -1;
-}
-
-int Fl_Anim_GIF_Image::y(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].y;
-  return -1;
-}
-
-Fl_Widget *Fl_Anim_GIF_Image::canvas() const {
-  return _canvas;
-}
-
-void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, unsigned short flags_/* = 0*/) {
-  if (_canvas)
-    _canvas->image(0);
-  _canvas = canvas_;
-  if (_canvas && !(flags_ & DontSetAsImage))
-    _canvas->image(this); // set animation as image() of canvas
-  if (_canvas && !(flags_ & DontResizeCanvas))
-    _canvas->size(w(), h());
-
-  // Note: 'Start' flag is *NOT* used here,
-  //       but an already running animation is restarted.
-  _frame = -1;
-  if (Fl::has_timeout(cb_animate, this)) {
-    Fl::remove_timeout(cb_animate, this);
-    next_frame();
-  }
-}
 
 const char *Fl_Anim_GIF_Image::name() const {
   return _name;
@@ -908,16 +905,20 @@ void Fl_Anim_GIF_Image::speed(double speed_) {
   _speed = speed_;
 }
 
-void Fl_Anim_GIF_Image::uncache(bool uncache_) {
-  _uncache = uncache_;
-}
-
-bool Fl_Anim_GIF_Image::uncache() const {
-  return _uncache;
-}
-
 bool Fl_Anim_GIF_Image::valid() const {
   return _valid;
+}
+
+int Fl_Anim_GIF_Image::x(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].x;
+  return -1;
+}
+
+int Fl_Anim_GIF_Image::y(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].y;
+  return -1;
 }
 
 /*static*/
@@ -1026,6 +1027,14 @@ void Fl_Anim_GIF_Image::color_average(Fl_Color c_, float i_) {
 /*virtual*/
 void Fl_Anim_GIF_Image::desaturate() {
   _fi->desaturate = true;
+}
+
+/*virtual*/
+void Fl_Anim_GIF_Image::uncache() {
+  Inherited::uncache();
+  for (int i=0; i < _fi->frames_size; i++) {
+    if (_fi->frames[i].rgb) _fi->frames[i].rgb->uncache();
+  }
 }
 
 bool Fl_Anim_GIF_Image::is_animated() const {

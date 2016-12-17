@@ -21,7 +21,7 @@ static void set_title(Fl_Window *win_, Fl_Anim_GIF_Image *animgif_) {
   char buf[200];
   snprintf(buf, sizeof(buf), "%s (%d frames)  %2.2fx", fl_filename_name(animgif_->name()),
           animgif_->frames(), animgif_->speed());
-  if (animgif_->uncache())
+  if (animgif_->frame_uncache())
     strcat(buf, " U");
   win_->copy_label(buf);
   win_->copy_tooltip(buf);
@@ -69,7 +69,7 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
   win->user_data(animgif); // store address of image (see note in main())
 
   // exercise the optional tests on the animation
-  animgif->uncache(uncache);
+  animgif->frame_uncache(uncache);
   if (resizable) // note: bug in FLTK (STR 3352) - test resize functionality here
     animgif->resize(0.7); // hardcoded for now!
   if (average)

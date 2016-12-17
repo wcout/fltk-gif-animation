@@ -129,6 +129,19 @@ public:
    */
   bool is_animated() const;
   /**
+   Use frame_uncache(value) to set or forbid frame image uncaching.
+   If frame uncaching is set, frame images are not offscreen cached
+   for re-use and will be re-created every time they are displayed.
+   This saves a lot of  memory on the expense of cpu usage and
+   should to be carefully considered. Per default frame caching will
+   be done.
+   */
+  void frame_uncache(bool uncache_);
+  /**
+   Return the active frame_uncache() setting.
+   */
+  bool frame_uncache() const;
+  /**
    The load() method is either used from the constructor to load
    the image from the given file, or to re-load an existing
    animation from another file.
@@ -170,18 +183,9 @@ public:
   void speed(double speed_);
   double speed() const;
   /**
-   Use uncache() to set or forbid image uncaching
-   If uncaching is set, frame images are not offscreen cached for
-   re-use and will be re-created every time they are displayed.
-   This saves a lot of  memory on the expense of cpu usage and
-   should to be carefully considered. Per default caching will
-   be done.
-   */
-  void uncache(bool uncache_);
-  /**
-   Return the active uncache() setting.
-   */
-  bool uncache() const;
+    Uncache all cached image data now. Re-implemented from Fl_Pixmap.
+  */
+  virtual void uncache();
   /**
    The valid() method returns if the class has
    successfully loaded and the image has at least
