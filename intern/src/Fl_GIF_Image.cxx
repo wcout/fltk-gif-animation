@@ -166,16 +166,23 @@ typedef unsigned char uchar;
  GIF format could not be decoded, and ERR_NO_IMAGE if the image could not
  be loaded for another reason.
  */
-Fl_GIF_Image::Fl_GIF_Image(const char *infname, bool anim/*= false*/) : Fl_Pixmap((char *const*)0),
+Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0),
+  _anim(false),
   gif_handle(0) {
-  load(infname, anim);
+  load(infname);
+}
+
+Fl_GIF_Image::Fl_GIF_Image(const char *infname, bool anim) : Fl_Pixmap((char *const*)0),
+  _anim(anim),
+  gif_handle(0) {
+  load(infname);
 }
 
 Fl_GIF_Image::Fl_GIF_Image() : Fl_Pixmap((char *const*)0),
   gif_handle(0) {
 }
 
-bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
+bool Fl_GIF_Image::load(const char *infname) {
   close_gif_file();
 
   // as load() can be called multiple times
@@ -211,7 +218,7 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
   uchar *Image = image->RasterBits;
   Width = id->Width; // overwrite canvas size
   Height = id->Height; // with size of first image
-  if (anim) {
+  if (_anim) {
     // make a copy of the raster data because we modify them
     // (but for animated gif we need to keep the original)
     Image = new uchar[Width * Height];
@@ -329,7 +336,7 @@ bool Fl_GIF_Image::load(const char *infname, bool anim/* = false*/) {
   data((const char **)new_data, Height + 2);
   alloc_data = 1;
 
-  if (anim) {
+  if (_anim) {
     // free temporary raster data
     delete[] Image;
     // store file handle
@@ -519,7 +526,7 @@ static void dispose(int frame_, FrameInfo *_fi, uchar *offscreen_) {
 Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
                                      Fl_Widget *canvas_/* = 0*/,
                                      unsigned short flags_/* = 0 */) :
-  Inherited(name_, 1),
+  Inherited(name_, true),
   _name(0),
   _canvas(canvas_),
   _uncache(false),
@@ -684,7 +691,8 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   clear_frames();
   free(_name);
   _name = name_ ? strdup(name_) : 0;
-  if (!Inherited::load(name_, true))
+  _anim = true;
+  if (!Inherited::load(name_))
     return false;
   GifFileType *gifFileIn = (GifFileType *)gif_handle;
   DEBUG(("%d x %d  BG=%d aspect %d\n", gifFileIn->SWidth, gifFileIn->SHeight, gifFileIn->SBackGroundColor, gifFileIn->AspectByte));

@@ -64,7 +64,6 @@ public:
    The constructor creates an new animated gif object from
    the given file.
    Optionally it applies the canvas() method after successful load.
-   See canvas().
    If 'Start' is specified in the 'flags' parameter it calls start()
    after successful load.
    */
@@ -72,12 +71,28 @@ public:
   Fl_Anim_GIF_Image();
   virtual ~Fl_Anim_GIF_Image();
   /**
+   The canvas() method sets or gets the current widget, that
+   is used for display of the frame images.
+   The _flags_ parameter specifies wheather the canvas widget
+   is resized to the animation dimensions and/or its image()
+   method will be used to set the current frame image
+   during animation.
+   */
+  void canvas(Fl_Widget *canvas_, unsigned short flags_ = 0);
+  Fl_Widget *canvas() const;
+  /**
+   Return the width and height of the animation canvas as
+   specified in the file header
+   */
+  int canvas_w() const;
+  int canvas_h() const;
+  /**
    The color_average() method applies the specified color_average
    to all frames of the animation.
    */
   virtual void color_average(Fl_Color c_, float i_);
   /**
-   The virtual copy method makes a copy of the animated image
+   The virtual copy() method makes a copy of the animated image
    and resizes all of its frame images to W x H using
    the current resize method.
    */
@@ -89,17 +104,11 @@ public:
   virtual void desaturate();
   virtual void draw(int x_, int y_, int w_, int h_, int cx_ = 0, int cy_ = 0);
   /**
-   Return the width and height of the animation canvas as
-   specified in the file header
-   */
-  int canvas_w() const;
-  int canvas_h() const;
-  /**
-   Return the delay of frame 'frame_' [0-frames() -1] in seconds
+   Return the delay of frame 'frame_' `[0-frames() -1]` in seconds
    */
   double delay(int frame_) const;
   /**
-   Set the delay of frame 'frame_' [0-frames() -1] in seconds
+   Set the delay of frame 'frame_' `[0-frames() -1]` in seconds
    */
   void delay(int frame_, double delay_);
   /**
@@ -107,11 +116,11 @@ public:
    */
   int frames() const;
   /**
-   Set the current frame in the range index [0-frames() -1]
+   Set the current frame in the range index `[0-frames() -1]`
    */
   void frame(int frame_);
   /**
-   Return the current frame in the range index [0-frames() -1]
+   Return the current frame in the range index `[0-frames() -1]`
    or -1 if the image has no frames.
    */
   int frame() const;
@@ -129,7 +138,7 @@ public:
    */
   bool is_animated() const;
   /**
-   Use frame_uncache(value) to set or forbid frame image uncaching.
+   Use frame_uncache() to set or forbid frame image uncaching.
    If frame uncaching is set, frame images are not offscreen cached
    for re-use and will be re-created every time they are displayed.
    This saves a lot of  memory on the expense of cpu usage and
@@ -151,16 +160,6 @@ public:
    Return the name of the played file as specified in the constructor.
    */
   const char *name() const;
-  /**
-   The canvas() method sets or gets the current widget, that
-   is used for display of the frame images.
-   The 'flags' parameter specifies wheather the canvas widget
-   is resized to the animation dimensions and/or its image()
-   method will be used to set the current frame image
-   during animation.
-   */
-  void canvas(Fl_Widget *canvas_, unsigned short flags_ = 0);
-  Fl_Widget *canvas() const;
   /**
    The start() method (re-)starts the playing of the frames.
    */

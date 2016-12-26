@@ -32,7 +32,7 @@ class FL_EXPORT Fl_GIF_Image : public Fl_Pixmap {
 
 public:
 
-  Fl_GIF_Image(const char* filename, bool anim = false);
+  Fl_GIF_Image(const char* filename);
   Fl_GIF_Image();
   virtual ~Fl_GIF_Image();
   /**
@@ -57,9 +57,18 @@ public:
   static bool animate;
 protected:
 
-  bool load(const char* filename, bool anim = false);
+  /**
+   The protected constructor is used by Fl_Anim_GIF_Image().
+   It's sole purpose is to pass a flag to the load() method,
+   which signals the loading of an animated GIF. This makes
+   load() leave the file descriptor open, in order to be
+   usable for the derived class.
+  */
+  Fl_GIF_Image(const char* filename, bool anim_);
+  bool load(const char* filename);
   void close_gif_file();
   void *read_next_image();
+  bool _anim;
   void *gif_handle;
 };
 
