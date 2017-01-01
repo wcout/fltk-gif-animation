@@ -108,6 +108,8 @@ Change the speed live using `+` and `-` keys.
 Look at the minimal example program `animgifimage-simple.cxx` to get a quick idea how to
 use the class.
 
+Have a look at the [API](https://wcout.github.io/animgif/html/class_fl___anim___g_i_f___image.html).
+
 ## Resume
 
 I am not entirely convinced by the concept of `Solution 2` after all, but it is
