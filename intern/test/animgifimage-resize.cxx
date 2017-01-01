@@ -43,7 +43,6 @@ public:
         delete animgif;
       }
       Fl_Anim_GIF_Image *copied = (Fl_Anim_GIF_Image *)orig->copy(W_, H_);
-      window()->cursor(FL_CURSOR_DEFAULT);
       if (!copied->valid()) { // check success of copy
         Fl::warning("Fl_Anim_GIF_Image::copy() %d x %d failed", W_, H_);
       }
@@ -54,6 +53,7 @@ public:
                      Fl_Anim_GIF_Image::DontResizeCanvas);
       copied->start();
     }
+    window()->cursor(FL_CURSOR_DEFAULT);
   }
   static void do_resize_cb(void *d_) {
     Canvas *c = (Canvas *)d_;
@@ -89,11 +89,12 @@ int main(int argc_, char *argv_[]) {
     }
   }
   if (!fileName) {
+    fprintf(stderr, "Test program for animated copy.\n");
     fprintf(stderr, "Usage: %s fileName [-b] [-m] [-g] [-u]\n", argv_[0]);
     exit(0);
   }
 
-  Fl_Double_Window win(640, 480, "test animated copy");
+  Fl_Double_Window win(640, 480);
 
   // prepare a canvas for the animation
   // (we want to show it in the center of the window)
@@ -114,32 +115,38 @@ int main(int argc_, char *argv_[]) {
   orig = new Fl_Anim_GIF_Image(/*name_=*/ fileName,
                              /*canvas_=*/ &canvas,
                               /*flags_=*/ flags );
-  if (bilinear) {
-    Fl_RGB_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
-    printf("Using bilinear scaling - can be slow!\n");
-    // NOTE: this is *really* slow. Scaling the TrueColor test image
-    //       to full HD desktop takes about 45 seconds!
-  }
-  orig->frame_uncache(uncache);
-  if (uncache) {
-    printf("Caching disabled - watch cpu load!\n");
-  }
-
-  // set initial size to fit into window
-  double ratio = orig->valid() ? (double)orig->w() / orig->h() : 1;
-  int W = win.w() - 40;
-  int H = (double)W / ratio;
-  win.size(W, H);
 
   // check if loading succeeded
   printf("%s: valid: %d frames: %d uncache: %d\n",
     orig->name(), orig->valid(), orig->frames(), orig->frame_uncache());
   if (orig->valid()) {
+    win.copy_label(fileName);
+
+    // print information about image optimization
     int n = 0;
     for (int i = 0; i < orig->frames(); i++) {
       if (orig->x(i) != 0 || orig->y(i) != 0) n++;
     }
     printf("image has %d optimized frames\n", n);
+
+    if (bilinear) {
+      Fl_RGB_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
+      printf("Using bilinear scaling - can be slow!\n");
+      // NOTE: this is *really* slow. Scaling the TrueColor test image
+      //       to full HD desktop takes about 45 seconds!
+    }
+    orig->frame_uncache(uncache);
+    if (uncache) {
+      printf("Caching disabled - watch cpu load!\n");
+    }
+
+    // set initial size to fit into window
+    double ratio = orig->valid() ? (double)orig->w() / orig->h() : 1;
+    int W = win.w() - 40;
+    int H = (double)W / ratio;
+    printf("original size: %d x %d\n", orig->w(), orig->h());
+    win.size(W, H);
+
     return Fl::run();
   }
 }
