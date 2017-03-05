@@ -85,6 +85,10 @@ public:
    specified in the file header
    */
   int canvas_w() const;
+  /**
+   Return the width and height of the animation canvas as
+   specified in the file header
+   */
   int canvas_h() const;
   /**
    The color_average() method applies the specified color_average
