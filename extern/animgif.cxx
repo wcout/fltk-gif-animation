@@ -12,13 +12,13 @@ static void quit_cb(Fl_Widget* w_, void*) {
   exit(0);
 }
 
-Fl_Window *openFile(const char *name_, bool debug_, bool close_ = false) {
+Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool close_ = false) {
   Fl_Double_Window *win = new Fl_Double_Window(100, 100);
   win->color(BACKGROUND);
   if (close_)
     win->callback(quit_cb);
   printf("\nLoading '%s'\n", name_);
-  Fl_Anim_GIF *animgif = new Fl_Anim_GIF(0, 0, 0, 0, name_, false, debug_);
+  Fl_Anim_GIF *animgif = new Fl_Anim_GIF(0, 0, 0, 0, name_, /*start_=*/false, optimize_mem_, debug_);
   win->end();
   if (animgif->frames()) {
     if (animgif->h() < 100) // test resize()
@@ -66,7 +66,7 @@ bool openTestSuite(const char *dir_) {
     if (!strstr(name, ".gif") && !strstr(name, ".GIF")) continue;
     snprintf(buf, sizeof(buf), "%s/%s", dir_, name);
     bool debug = strstr(name, "debug");	// hack: when name contains 'debug' open single frames
-    if (openFile(buf, debug, cnt == 0))
+    if (openFile(buf, true, debug, cnt == 0))
       cnt++;
   }
   return cnt != 0;
@@ -84,14 +84,14 @@ int main(int argc_, char *argv_[]) {
           debug = true;
       for (int i = 1; i < argc_; i++)
         if (argv_[i][0] != '-')
-          openFile(argv_[i], debug, debug);
+          openFile(argv_[i], false, debug, debug);
     }
   } else {
     while (1) {
       const char *filename = fl_file_chooser("Select a GIF image file","*.{gif,GIF}", NULL);
       if (!filename)
         break;
-      Fl_Window *win = openFile(filename, false);
+      Fl_Window *win = openFile(filename, true, false);
       Fl::run();
       delete win; // delete last window (which is now just hidden) to test destructors
     }

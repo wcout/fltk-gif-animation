@@ -146,6 +146,7 @@ static void dispose(int frame_, FrameInfo *_fi, uchar *offscreen_) {
 
 Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_, int w_, int h_,
                          const char *name_ /* = 0*/, bool start_ /* = false*/,
+                         bool optimize_mem_/* = false*/,
                          bool debug_/* = false*/) :
   Inherited(x_, y_, 0, 0),
   _valid(false),
@@ -155,6 +156,7 @@ Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_, int w_, int h_,
   if (!_fi)
     return;
   _fi->debug = debug_;
+  _fi->optimize_mem = optimize_mem_;
   load(name_);
   if (canvas_w() && canvas_h()) {
     if (!w() && !h())
@@ -464,4 +466,29 @@ void Fl_Anim_GIF::color_average(Fl_Color c_, float i_) {
 /*virtual*/
 void Fl_Anim_GIF::desaturate() {
   _fi->desaturate = true;
+}
+
+/*virtual*/
+void Fl_Anim_GIF::draw() {
+  // Note: Shall we additionally draw the label()?
+  // Inherited::draw();
+  if (this->image()) {
+    if (_fi->optimize_mem) {
+      int f0 = _frame;
+      while (f0 > 0 && !(_fi->frames[f0].x == 0 && _fi->frames[f0].y == 0 &&
+                       _fi->frames[f0].w == w() && _fi->frames[f0].h == h()))
+        --f0;
+      for (int f = f0; f <= _frame; f++) {
+        if (f < _frame && _fi->frames[f].dispose == DISPOSE_PREVIOUS) continue;
+        if (f < _frame && _fi->frames[f].dispose == DISPOSE_BACKGROUND) continue;
+        Fl_RGB_Image *rgb = _fi->frames[f].rgb;
+        if (rgb) {
+          rgb->draw(x() + _fi->frames[f].x, y() + _fi->frames[f].y);
+        }
+      }
+    }
+    else {
+      this->image()->draw(x(), y());
+    }
+  }
 }
