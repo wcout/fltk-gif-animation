@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <cmath> // lround()
 #include <FL/Fl_RGB_Image.H>
 #include <FL/Fl.H>
 #include <new> // std::nothrow
@@ -28,21 +29,25 @@ struct RGBA_Color {
 struct GifFrame {
   GifFrame() :
     rgb(0),
+    average_color(FL_BLACK),
+    average_weight(-1),
+    desaturated(false),
     x(0),
     y(0),
     w(0),
     h(0),
     delay(0),
     dispose(0),
-    transparent(false),
     transparent_color_index(-1) {}
-  Fl_RGB_Image *rgb;		// full frame image
-  int x, y, w, h;			// frame original dimensions
-  double delay;				// delay (already converted to ms)
-  int dispose;				// disposal method
-  bool transparent;       // background color is transparent color
-  int transparent_color_index;
-  RGBA_Color transparent_color;
+  Fl_RGB_Image *rgb;                       // full frame image
+  Fl_Color average_color;                  // last average color
+  float average_weight;                    // last average weight
+  bool desaturated;                        // flag if frame is desaturated
+  int x, y, w, h;                          // frame original dimensions
+  double delay;                            // delay (already converted to ms)
+  int dispose;                             // disposal method
+  int transparent_color_index;             // needed for dispose()
+  RGBA_Color transparent_color;            // needed for dispose()
 };
 
 struct FrameInfo {
@@ -204,6 +209,21 @@ bool Fl_Anim_GIF::next_frame() {
   // NOTE: decreases performance, but saves a lot of memory
   if (_uncache && Inherited::image())
     Inherited::image()->uncache();
+
+  // color average pending?
+  if (_fi->average_weight >= 0 && _fi->average_weight < 1 &&
+      ((_fi->average_color != _fi->frames[_frame].average_color) ||
+       (_fi->average_weight != _fi->frames[_frame].average_weight))) {
+    _fi->frames[_frame].rgb->color_average(_fi->average_color, _fi->average_weight);
+    _fi->frames[_frame].average_color = _fi->average_color;
+    _fi->frames[_frame].average_weight = _fi->average_weight;
+  }
+
+  // desaturate pending?
+  if (_fi->desaturate && !_fi->frames[_frame].desaturated) {
+    _fi->frames[_frame].rgb->desaturate();
+    _fi->frames[_frame].desaturated = true;
+  }
 
   Inherited::image(image());
   if ((last_frame >= 0 && (_fi->frames[last_frame].dispose == DISPOSE_BACKGROUND ||
@@ -397,4 +417,51 @@ bool Fl_Anim_GIF::valid() const {
 void Fl_Anim_GIF::cb_animate(void *d_) {
   Fl_Anim_GIF *b = (Fl_Anim_GIF *)d_;
   b->next_frame();
+}
+
+Fl_Anim_GIF& Fl_Anim_GIF::resize(int W_, int H_) {
+  int W(W_);
+  int H(H_);
+  if (!W || !H || ((W == w() && H == h()))) {
+    return *this;
+  }
+  for (int i=0; i < _fi->frames_size; i++) {
+    Fl_RGB_Image *rgb =  _fi->frames[i].rgb;
+    if (_fi->optimize_mem) {
+      double scale_factor_x = (double)W_ / (double)w();
+      double scale_factor_y = (double)H_ / (double)h();
+      int new_x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
+      int new_y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
+      int new_w = (int)((double)_fi->frames[i].w * scale_factor_x + .5);
+      int new_h = (int)((double)_fi->frames[i].h * scale_factor_y + .5);
+      _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(new_w, new_h);
+      _fi->frames[i].x = new_x;
+      _fi->frames[i].h = new_y;
+      _fi->frames[i].w = new_w;
+      _fi->frames[i].h = new_h;
+    }
+    else {
+      _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(W_, H_);
+    }
+  }
+  w(W_);
+  h(H_);
+  _fi->canvas_w = w();
+  _fi->canvas_h = h();
+  return *this;
+}
+
+Fl_Anim_GIF& Fl_Anim_GIF::resize(double scale_) {
+  return resize(lround((double)w() * scale_), lround((double)h() * scale_));
+}
+
+/*virtual*/
+void Fl_Anim_GIF::color_average(Fl_Color c_, float i_) {
+  _fi->average_color = c_;
+  _fi->average_weight = i_;
+}
+
+/*virtual*/
+void Fl_Anim_GIF::desaturate() {
+  _fi->desaturate = true;
 }

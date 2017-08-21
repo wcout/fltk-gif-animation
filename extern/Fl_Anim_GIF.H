@@ -15,10 +15,26 @@ public:
   ~Fl_Anim_GIF();
   int canvas_w() const;
   int canvas_h() const;
+  /**
+   The color_average() method applies the specified color_average
+   to all frames of the animation.
+   */
+  virtual void color_average(Fl_Color c_, float i_);
+  /**
+   The desaturate() method applies desaturate() to all frames
+   of the animation.
+   */
+  virtual void desaturate();
   int frames() const;
   int frame() const;
   Fl_Image *image() const;
   Fl_Image *image(int frame_) const;
+  /**
+   The resize() method resizes the image to the
+   specified size, replacing the current image.
+   */
+  Fl_Anim_GIF& resize(int W_, int H_);
+  Fl_Anim_GIF& resize(double scale_);
   bool start();
   void uncache(bool uncache_);
   bool uncache() const;

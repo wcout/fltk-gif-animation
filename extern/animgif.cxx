@@ -21,6 +21,8 @@ Fl_Window *openFile(const char *name_, bool debug_, bool close_ = false) {
   Fl_Anim_GIF *animgif = new Fl_Anim_GIF(0, 0, 0, 0, name_, false, debug_);
   win->end();
   if (animgif->frames()) {
+    if (animgif->h() < 100)
+      animgif->resize(animgif->w()*2, animgif->h()*2);
     win->size(animgif->w(), animgif->h());
     char buf[200];
     sprintf(buf, "%s (%d frames)", fl_filename_name(name_), animgif->frames());
