@@ -83,9 +83,9 @@ struct FrameInfo {
 #define DEBUG(x) if ( _fi->debug ) printf x
 //#define DEBUG(x)
 
-static double convertDelay(int d_) {
-  if (d_ < 1)
-    d_ = 10;
+static double convertDelay(FrameInfo *fi_, int d_) {
+  if (d_ <= 0)
+    d_ = fi_->loop_count != 1 ? 10 : 0;
   return (double)d_ / 100;
 }
 
@@ -167,7 +167,7 @@ Fl_Anim_GIF::~Fl_Anim_GIF() {
 
 bool Fl_Anim_GIF::start() {
   if (_fi->frames_size) {
-    nextFrame();
+    next_frame();
   }
   return _fi->frames_size != 0;
 }
@@ -193,7 +193,7 @@ static bool push_back_frame(FrameInfo *fi_, GifFrame *frame_) {
   return true;
 }
 
-bool Fl_Anim_GIF::nextFrame() {
+bool Fl_Anim_GIF::next_frame() {
   int last_frame = _frame;
   _frame++;
   if (_frame >= _fi->frames_size)
@@ -214,7 +214,7 @@ bool Fl_Anim_GIF::nextFrame() {
     redraw();
   double delay = _fi->frames[_frame].delay;
   if (delay)	// normal GIF has no delay
-    Fl::repeat_timeout(delay, cb_animate, this);
+    Fl::add_timeout(delay, cb_animate, this);
   return true;
 }
 
@@ -270,22 +270,30 @@ bool Fl_Anim_GIF::load(const char *name_) {
     int e = image->ExtensionBlockCount;
     while (e--) {
       ExtensionBlock *ext = &image->ExtensionBlocks[ e ];
-      if (ext->Function == GRAPHICS_EXT_FUNC_CODE) {
+      if (_frame < 0 && ext->Function == APPLICATION_EXT_FUNC_CODE &&
+          ext->ByteCount >= 11 && memcmp(ext->Bytes, "NETSCAPE2.0", 11) == 0) {
+        ExtensionBlock *subext = &image->ExtensionBlocks[ e + 1 ];
+        if (subext->ByteCount >= 3) {
+          unsigned char *params = subext->Bytes;
+          _fi->loop_count = params[1] | (params[2] << 8);
+          DEBUG(("netscape loop count: %u\n", _fi->loop_count));
+        }
+      } else if (ext->Function == GRAPHICS_EXT_FUNC_CODE) {
         DGifExtensionToGCB(ext->ByteCount, ext->Bytes, &gcb);
         DEBUG(("#%d %d/%d %dx%d delay: %d, dispose: %d transparent_color: %d\n",
                (int)_fi->frames_size + 1,
                frame.x, frame.y, frame.w, frame.h,
                gcb.DelayTime, gcb.DisposalMode, gcb.TransparentColor));
-        frame.delay = convertDelay(gcb.DelayTime);
         frame.dispose = gcb.DisposalMode;
-        break;
+        if (_frame >= 0)
+          break;
       }
-    }
-    if (!ColorMap) {
+    }    if (!ColorMap) {
       fprintf(stderr, "Gif Image does not have a colormap\n");
       DGifCloseFile(gifFileIn, &errorCode);
       return false;
     }
+    frame.delay = convertDelay(_fi, gcb.DelayTime);
 
     // we know now everything we need about the frame..
     frame.transparent_color_index = gcb.TransparentColor;
@@ -388,5 +396,5 @@ bool Fl_Anim_GIF::valid() const {
 /*static*/
 void Fl_Anim_GIF::cb_animate(void *d_) {
   Fl_Anim_GIF *b = (Fl_Anim_GIF *)d_;
-  b->nextFrame();
+  b->next_frame();
 }

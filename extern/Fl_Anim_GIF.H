@@ -24,7 +24,7 @@ public:
   bool uncache() const;
   bool valid() const;
 protected:
-  bool nextFrame();
+  bool next_frame();
   void clear_frames();
   bool load(const char *name_);
 private:
