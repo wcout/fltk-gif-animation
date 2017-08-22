@@ -45,6 +45,8 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool clo
       win->color(BACKGROUND);
       Fl_Box *b = new Fl_Box(0, 0, win->w(), win->h());
       b->image(animgif->image(i));
+		b->size(b->image()->w(), b->image()->h());
+		win->size(b->image()->w(), b->image()->h());
       win->end();
       win->show();
     }
