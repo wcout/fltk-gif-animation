@@ -14,7 +14,7 @@
 // See the GNU General Public License for more details:
 // http://www.gnu.org/licenses/.
 //
-#include "Fl_Anim_GIF.cxx"
+#include "Fl_Anim_GIF.cxx" // include the widget code directly
 
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_File_Chooser.H>
@@ -37,7 +37,7 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool clo
   Fl_Anim_GIF *animgif = new Fl_Anim_GIF(0, 0, 0, 0, name_, /*start_=*/false, optimize_mem_, debug_);
   win->end();
   if (animgif->frames()) {
-    double scale = animgif->h() < 100 ? 2 : 1;
+    double scale = animgif->h() < 100 ? 2 : 1; // test resize() method on small GIF's
     animgif->resize(scale);
     win->size(animgif->w(), animgif->h());
     char buf[200];
@@ -90,6 +90,12 @@ bool openTestSuite(const char *dir_) {
   return cnt != 0;
 }
 
+//
+// There are 3 ways how to use this test program:
+//  - call with no parameters: brings up file chooser to select and display a GIF
+//  - call with a GIF file as argument: display just this GIF file
+//  - call with -t and a directory path: display *all* GIF's in this directory
+//
 int main(int argc_, char *argv_[]) {
   fl_register_images();
   if (argc_ > 1) {
