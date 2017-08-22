@@ -9,20 +9,17 @@
 #include <cmath> // lround()
 #include <FL/Fl_RGB_Image.H>
 #include <FL/Fl.H>
-#include <new> // std::nothrow
 
-namespace {
-  enum Transparency {
-    T_NONE = 0xff,
-    T_FULL = 0
-  };
+enum Transparency {
+  T_NONE = 0xff,
+  T_FULL = 0
+};
 
 struct RGBA_Color {
   uchar r, g, b, alpha;
   RGBA_Color(uchar r_ = 0, uchar g_ = 0, uchar b_ = 0, uchar a_ = T_NONE) :
     r(r_), g(g_), b(b_), alpha(a_) {}
 };
-}
 
 #include "fl_anim_gif_private.H"
 
@@ -79,7 +76,6 @@ struct FrameInfo {
   bool optimize_mem;                       // Flag to store frames in original dimensions
   uchar *offscreen;                        // internal "offscreen" buffer to build frames
 };
-
 
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Group.H>	// for parent()
@@ -151,7 +147,7 @@ Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_, int w_, int h_,
   Inherited(x_, y_, 0, 0),
   _valid(false),
   _frame(-1),
-  _fi(new(std::nothrow)FrameInfo()),
+  _fi(new FrameInfo()),
   _uncache(false) {
   if (!_fi)
     return;
