@@ -304,7 +304,8 @@ bool Fl_Anim_GIF::load(const char *name_) {
         if (_frame >= 0)
           break;
       }
-    }    if (!ColorMap) {
+    }
+    if (!ColorMap) {
       fprintf(stderr, "Gif Image does not have a colormap\n");
       DGifCloseFile(gifFileIn, &errorCode);
       return false;
