@@ -254,8 +254,6 @@ bool Fl_Anim_GIF::load(const char *name_) {
   DEBUG(("%d x %d  BG=%d aspect %d\n", gifFileIn->SWidth, gifFileIn->SHeight, gifFileIn->SBackGroundColor, gifFileIn->AspectByte));
   _fi->canvas_w = gifFileIn->SWidth;
   _fi->canvas_h = gifFileIn->SHeight;
-  w( _fi->canvas_w);
-  h( _fi->canvas_h);
   _frame = -1;
   _fi->offscreen = (uchar *)calloc(_fi->canvas_w * _fi->canvas_h * 4, 1);
   _fi->background_color_index = gifFileIn->SColorMap ? gifFileIn->SBackGroundColor : -1;
@@ -327,7 +325,7 @@ bool Fl_Anim_GIF::load(const char *name_) {
 
     dispose(_frame, _fi, _fi->offscreen);
 
-    // copy image data to rgb
+    // copy image data to offscreen
     uchar *bits = image->RasterBits;
     for (int y = frame.y; y < frame.y + frame.h; y++) {
       for (int x = frame.x; x < frame.x + frame.w; x++) {
@@ -335,7 +333,7 @@ bool Fl_Anim_GIF::load(const char *name_) {
         if (c == gcb.TransparentColor)
           continue;
         uchar *buf = _fi->offscreen;
-        buf += (y * w() * 4 + (x * 4));
+        buf += (y * canvas_w() * 4 + (x * 4));
         *buf++ = ColorMap->Colors[c].Red;
         *buf++ = ColorMap->Colors[c].Green;
         *buf++ = ColorMap->Colors[c].Blue;
@@ -349,16 +347,16 @@ bool Fl_Anim_GIF::load(const char *name_) {
       uchar *dest = buf;
       for (int y = frame.y; y < frame.y + frame.h; y++) {
         for (int x = frame.x; x < frame.x + frame.w; x++) {
-          memcpy(dest, &_fi->offscreen[y * w() * 4 + x * 4], 4);
+          memcpy(dest, &_fi->offscreen[y * canvas_w() * 4 + x * 4], 4);
           dest += 4;
         }
       }
       frame.rgb = new Fl_RGB_Image(buf, frame.w, frame.h, 4);
     }
     else {
-      uchar *buf = new uchar[w() * h() * 4];
-      memcpy(buf, _fi->offscreen, w() * h() * 4);
-      frame.rgb = new Fl_RGB_Image(buf, w(), h(), 4);
+      uchar *buf = new uchar[canvas_w() * canvas_h() * 4];
+      memcpy(buf, _fi->offscreen, canvas_w() * canvas_h() * 4);
+      frame.rgb = new Fl_RGB_Image(buf, canvas_w(), canvas_h(), 4);
     }
     frame.rgb->alloc_array = 1;
 
@@ -374,7 +372,7 @@ bool Fl_Anim_GIF::load(const char *name_) {
   }
   DGifCloseFile(gifFileIn, &errorCode);
   _valid = true;
-  memset(_fi->offscreen, 0, w() * h() * 4);
+  memset(_fi->offscreen, 0, canvas_w() * canvas_h() * 4);
   return _valid;
 }         // load
 
@@ -424,37 +422,37 @@ void Fl_Anim_GIF::cb_animate(void *d_) {
 Fl_Anim_GIF& Fl_Anim_GIF::resize(int W_, int H_) {
   int W(W_);
   int H(H_);
-  if (!W || !H || ((W == w() && H == h()))) {
+  if (!W || !H || ((W == canvas_w() && H == canvas_h()))) {
     return *this;
   }
   for (int i=0; i < _fi->frames_size; i++) {
-    Fl_RGB_Image *rgb =  _fi->frames[i].rgb;
+    Fl_RGB_Image *rgb = _fi->frames[i].rgb;
     if (_fi->optimize_mem) {
-      double scale_factor_x = (double)W_ / (double)w();
-      double scale_factor_y = (double)H_ / (double)h();
+      double scale_factor_x = (double)W / (double)canvas_w();
+      double scale_factor_y = (double)H / (double)canvas_h();
       int new_x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
       int new_y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
       int new_w = (int)((double)_fi->frames[i].w * scale_factor_x + .5);
       int new_h = (int)((double)_fi->frames[i].h * scale_factor_y + .5);
       _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(new_w, new_h);
       _fi->frames[i].x = new_x;
-      _fi->frames[i].h = new_y;
+      _fi->frames[i].y = new_y;
       _fi->frames[i].w = new_w;
       _fi->frames[i].h = new_h;
     }
     else {
-      _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(W_, H_);
+      _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(W, H);
     }
+    delete rgb;
   }
-  w(W_);
-  h(H_);
-  _fi->canvas_w = w();
-  _fi->canvas_h = h();
+  _fi->canvas_w = W;
+  _fi->canvas_h = H;
+  size(W, H);
   return *this;
 }
 
 Fl_Anim_GIF& Fl_Anim_GIF::resize(double scale_) {
-  return resize(lround((double)w() * scale_), lround((double)h() * scale_));
+  return resize(lround((double)canvas_w() * scale_), lround((double)canvas_h() * scale_));
 }
 
 /*virtual*/
@@ -476,7 +474,7 @@ void Fl_Anim_GIF::draw() {
     if (_fi->optimize_mem) {
       int f0 = _frame;
       while (f0 > 0 && !(_fi->frames[f0].x == 0 && _fi->frames[f0].y == 0 &&
-                       _fi->frames[f0].w == w() && _fi->frames[f0].h == h()))
+                       _fi->frames[f0].w == canvas_w() && _fi->frames[f0].h == canvas_h()))
         --f0;
       for (int f = f0; f <= _frame; f++) {
         if (f < _frame && _fi->frames[f].dispose == DISPOSE_PREVIOUS) continue;

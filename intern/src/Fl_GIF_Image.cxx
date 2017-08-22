@@ -997,24 +997,25 @@ Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(int W_, int H_) {
   for (int i=0; i < _fi->frames_size; i++) {
     Fl_RGB_Image *rgb =  _fi->frames[i].rgb;
     if (_fi->optimize_mem) {
-      double scale_factor_x = (double)W_ / (double)w();
-      double scale_factor_y = (double)H_ / (double)h();
+      double scale_factor_x = (double)W / (double)w();
+      double scale_factor_y = (double)H / (double)h();
       int new_x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
       int new_y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
       int new_w = (int)((double)_fi->frames[i].w * scale_factor_x + .5);
       int new_h = (int)((double)_fi->frames[i].h * scale_factor_y + .5);
       _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(new_w, new_h);
       _fi->frames[i].x = new_x;
-      _fi->frames[i].h = new_y;
+      _fi->frames[i].y = new_y;
       _fi->frames[i].w = new_w;
       _fi->frames[i].h = new_h;
     }
     else {
-      _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(W_, H_);
+      _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(W, H);
     }
+    delete rgb;
   }
-  w(W_);
-  h(H_);
+  w(W);
+  h(H);
   _fi->canvas_w = w();
   _fi->canvas_h = h();
   if (_canvas) {

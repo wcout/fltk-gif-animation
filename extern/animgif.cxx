@@ -21,11 +21,11 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool clo
   Fl_Anim_GIF *animgif = new Fl_Anim_GIF(0, 0, 0, 0, name_, /*start_=*/false, optimize_mem_, debug_);
   win->end();
   if (animgif->frames()) {
-    if (animgif->h() < 100) // test resize()
-      animgif->resize(animgif->w()*2, animgif->h()*2);
+    double scale = animgif->h() < 100 ? 2 : 1;
+    animgif->resize(scale);
     win->size(animgif->w(), animgif->h());
     char buf[200];
-    sprintf(buf, "%s (%d frames)", fl_filename_name(name_), animgif->frames());
+    sprintf(buf, "%s (%d frames) scale=%1.1f", fl_filename_name(name_), animgif->frames(), scale);
     win->tooltip(strdup(buf));
     win->copy_label(buf);
     win->show();
