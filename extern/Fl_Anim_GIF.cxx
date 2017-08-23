@@ -157,7 +157,7 @@ static void dispose(int frame_, FrameInfo *_fi, uchar *offscreen_) {
 }
 
 Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_, int w_, int h_,
-                         const char *name_ /* = 0*/, bool start_ /* = false*/,
+                         const char *name_ /* = 0*/, bool start_ /* = true*/,
                          bool optimize_mem_/* = false*/,
                          bool debug_/* = false*/) :
   Inherited(x_, y_, 0, 0),

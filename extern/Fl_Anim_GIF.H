@@ -27,7 +27,7 @@ class Fl_Anim_GIF : public Fl_Box {
   typedef Fl_Box Inherited;
 public:
   Fl_Anim_GIF(int x_, int y_, int w_, int h_, const char *name_ = 0,
-              bool start_ = false, bool optimize_mem_ = false, bool debug_ = false);
+              bool start_ = true, bool optimize_mem_ = false, bool debug_ = false);
   ~Fl_Anim_GIF();
   int canvas_w() const;
   int canvas_h() const;
