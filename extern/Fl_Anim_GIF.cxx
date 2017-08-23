@@ -191,6 +191,11 @@ bool Fl_Anim_GIF::start() {
   return _fi->frames_size != 0;
 }
 
+bool Fl_Anim_GIF::stop() {
+  Fl::remove_timeout(cb_animate, this);
+  return _fi->frames_size != 0;
+}
+
 void Fl_Anim_GIF::clear_frames() {
   while (_fi->frames_size--) {
     delete _fi->frames[_fi->frames_size].rgb;
@@ -212,14 +217,9 @@ static bool push_back_frame(FrameInfo *fi_, GifFrame *frame_) {
   return true;
 }
 
-bool Fl_Anim_GIF::next_frame() {
+void Fl_Anim_GIF::set_frame(int frame_) {
   int last_frame = _frame;
-  _frame++;
-  if (_frame >= _fi->frames_size)
-    _frame = 0;
-  if (_frame >= _fi->frames_size)
-    return false;
-
+  _frame = frame_;
   // NOTE: decreases performance, but saves a lot of memory
   if (_uncache && Inherited::image())
     Inherited::image()->uncache();
@@ -246,6 +246,16 @@ bool Fl_Anim_GIF::next_frame() {
     parent()->redraw();
   else
     redraw();
+}
+
+bool Fl_Anim_GIF::next_frame() {
+  int frame(_frame);
+  frame++;
+  if (frame >= _fi->frames_size)
+    frame = 0;
+  if (frame >= _fi->frames_size)
+    return false;
+  set_frame(frame);
   double delay = _fi->frames[_frame].delay;
   if (delay)	// normal GIF has no delay
     Fl::add_timeout(delay, cb_animate, this);
@@ -255,6 +265,7 @@ bool Fl_Anim_GIF::next_frame() {
 bool Fl_Anim_GIF::load(const char *name_) {
   DEBUG(("Fl_Anim_GIF:::load '%s'\n", name_));
   clear_frames();
+  copy_label(name_); // TODO: store name as label() or use own field for it?
 
   // open gif file for readin
   GifFileType *gifFileIn;
@@ -397,6 +408,30 @@ int Fl_Anim_GIF::canvas_h() const {
   return _fi->canvas_h;
 }
 
+double Fl_Anim_GIF::delay(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].delay;
+  return 0.;
+}
+
+void Fl_Anim_GIF::delay(int frame_, double delay_) {
+  if (frame_ >= 0 && frame_ < frames())
+    _fi->frames[frame_].delay = delay_;
+}
+
+void Fl_Anim_GIF::frame(int frame_) {
+  if (Fl::has_timeout(cb_animate, this)) {
+    Fl::warning("Fl_Anim_GIF::frame(%d): not idle!", frame_);
+    return;
+  }
+  if (frame_ >= 0 && frame_ < frames()) {
+    set_frame(frame_);
+  }
+  else {
+    Fl::warning("Fl_Anim_GIF::frame(%d): out of range!", frame_);
+  }
+}
+
 int Fl_Anim_GIF::frames() const {
   return _fi->frames_size;
 }
@@ -481,7 +516,8 @@ void Fl_Anim_GIF::desaturate() {
 
 /*virtual*/
 void Fl_Anim_GIF::draw() {
-  // Note: Shall we additionally draw the label()?
+  // TODO: Shall we additionally support/draw the label()
+  //       Note: currently we store the name_ in the label()!
   // Inherited::draw();
   if (this->image()) {
     if (_fi->optimize_mem) {

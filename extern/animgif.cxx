@@ -54,7 +54,7 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool clo
   if (debug_) {
     for (int i = 0; i < animgif->frames(); i++) {
       char buf[200];
-      sprintf(buf, "Frame #%d\n", i + 1);
+      sprintf(buf, "Frame #%d", i + 1);
       Fl_Double_Window *win = new Fl_Double_Window(animgif->w(), animgif->h());
       win->tooltip(strdup(buf));
       win->copy_label(buf);

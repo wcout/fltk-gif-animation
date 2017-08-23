@@ -41,9 +41,34 @@ public:
    of the animation.
    */
   virtual void desaturate();
+  /**
+   Return the delay of frame 'frame_' `[0-frames() -1]` in seconds
+   */
+  double delay(int frame_) const;
+  /**
+   Set the delay of frame 'frame_' `[0-frames() -1]` in seconds
+   */
+  void delay(int frame_, double delay_);
+  /**
+   Return the number of frames.
+   */
   int frames() const;
+  /**
+   Set the current frame in the range index `[0-frames() -1]`
+   */
+  void frame(int frame_);
+  /**
+   Return the current frame in the range index `[0-frames() -1]`
+   or -1 if the image has no frames.
+   */
   int frame() const;
+  /**
+   Return the current frame image.
+   */
   Fl_Image *image() const;
+  /**
+   Return the frame image of frame 'frame_'
+   */
   Fl_Image *image(int frame_) const;
   /**
    The resize() method resizes the image to the
@@ -51,14 +76,27 @@ public:
    */
   Fl_Anim_GIF& resize(int W_, int H_);
   Fl_Anim_GIF& resize(double scale_);
+  /**
+   The load() method is either used from the constructor to load
+   the image from the given file, or to re-load an existing
+   animation from another file.
+   */
+  bool load(const char *name_);
+  /**
+   The start() method (re-)starts the playing of the frames.
+   */
   bool start();
+  /**
+   The stop() method stops the playing of the frames.
+   */
+  bool stop();
   void uncache(bool uncache_);
   bool uncache() const;
   bool valid() const;
 protected:
   bool next_frame();
   void clear_frames();
-  bool load(const char *name_);
+  void set_frame(int frame_);
 private:
   static void cb_animate(void *d_);
 private:
