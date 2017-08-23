@@ -93,6 +93,7 @@ public:
   void uncache(bool uncache_);
   bool uncache() const;
   bool valid() const;
+  bool debug() const;
 protected:
   bool next_frame();
   void clear_frames();
@@ -105,6 +106,7 @@ private:
   int _frame;	// current frame
   FrameInfo *_fi;
   bool _uncache;
+  bool _stopped;
 };
 
 #endif // Fl_Gif_Anim_H

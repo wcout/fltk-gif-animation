@@ -164,7 +164,8 @@ Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_, int w_, int h_,
   _valid(false),
   _frame(-1),
   _fi(new FrameInfo()),
-  _uncache(false) {
+  _uncache(false),
+  _stopped(false) {
   if (!_fi)
     return;
   _fi->debug = debug_;
@@ -185,6 +186,7 @@ Fl_Anim_GIF::~Fl_Anim_GIF() {
 }
 
 bool Fl_Anim_GIF::start() {
+  _stopped = false;
   if (_fi->frames_size) {
     next_frame();
   }
@@ -193,6 +195,7 @@ bool Fl_Anim_GIF::start() {
 
 bool Fl_Anim_GIF::stop() {
   Fl::remove_timeout(cb_animate, this);
+  _stopped = true;
   return _fi->frames_size != 0;
 }
 
@@ -246,6 +249,7 @@ void Fl_Anim_GIF::set_frame(int frame_) {
     parent()->redraw();
   else
     redraw();
+  do_callback();
 }
 
 bool Fl_Anim_GIF::next_frame() {
@@ -257,7 +261,7 @@ bool Fl_Anim_GIF::next_frame() {
     return false;
   set_frame(frame);
   double delay = _fi->frames[_frame].delay;
-  if (delay)	// normal GIF has no delay
+  if (!_stopped && delay)	// normal GIF has no delay
     Fl::add_timeout(delay, cb_animate, this);
   return true;
 }
@@ -461,6 +465,11 @@ bool Fl_Anim_GIF::uncache() const {
 bool Fl_Anim_GIF::valid() const {
   return _valid;
 }
+
+bool Fl_Anim_GIF::debug() const {
+  return _fi->debug;
+}
+
 /*static*/
 void Fl_Anim_GIF::cb_animate(void *d_) {
   Fl_Anim_GIF *b = (Fl_Anim_GIF *)d_;

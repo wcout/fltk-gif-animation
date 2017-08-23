@@ -28,13 +28,29 @@ static void quit_cb(Fl_Widget* w_, void*) {
   exit(0);
 }
 
+static void callback(Fl_Widget *o_, void *d_) {
+  // this is called each time the frame image changes (to the next frame)
+  Fl_Anim_GIF *animgif = (Fl_Anim_GIF *)o_;
+  if (animgif->debug()) {
+    printf( "'%s': displaying frame %d/%d, delay %fs\n",
+      animgif->label(),
+      animgif->frame()+1, animgif->frames(), animgif->delay(animgif->frame()));
+  }
+#if 0
+  // stop animation after one complete pass
+  if (animgif->frame()+1 == animgif->frames())
+    animgif->stop();
+#endif
+}
+
 Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool close_ = false) {
   Fl_Double_Window *win = new Fl_Double_Window(100, 100);
   win->color(BACKGROUND);
   if (close_)
     win->callback(quit_cb);
-  printf("\nLoading '%s'\n", name_);
+  printf("Loading '%s'\n", name_);
   Fl_Anim_GIF *animgif = new Fl_Anim_GIF(0, 0, 0, 0, name_, /*start_=*/false, optimize_mem_, debug_);
+  animgif->callback(callback);
   win->end();
   if (animgif->frames()) {
     double scale = animgif->h() < 100 ? 2 : 1; // test resize() method on small GIF's
