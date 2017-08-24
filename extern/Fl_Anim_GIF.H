@@ -29,7 +29,15 @@ public:
   Fl_Anim_GIF(int x_, int y_, int w_, int h_, const char *name_ = 0,
               bool start_ = true, bool optimize_mem_ = false, bool debug_ = false);
   ~Fl_Anim_GIF();
+  /**
+   Return the width and height of the animation canvas as
+   specified in the file header
+   */
   int canvas_w() const;
+  /**
+   Return the width and height of the animation canvas as
+   specified in the file header
+   */
   int canvas_h() const;
   /**
    The color_average() method applies the specified color_average
@@ -90,9 +98,29 @@ public:
    The stop() method stops the playing of the frames.
    */
   bool stop();
+  /**
+   Use uncache() to set or forbid frame image uncaching.
+   If frame uncaching is set, frame images are not offscreen cached
+   for re-use and will be re-created every time they are displayed.
+   This saves a lot of  memory on the expense of cpu usage and
+   should to be carefully considered. Per default frame caching will
+   be done.
+   */
   void uncache(bool uncache_);
+  /**
+   Return the active uncache() setting.
+   */
   bool uncache() const;
+  /**
+   The valid() method returns if the class has
+   successfully loaded and the image has at least
+   one frame.
+   */
   bool valid() const;
+  /**
+   The debug() method returns if the class has
+   set the debug option in it's constructor.
+   */
   bool debug() const;
 protected:
   bool next_frame();
