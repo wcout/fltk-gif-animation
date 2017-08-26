@@ -117,6 +117,13 @@ public:
    */
   bool load(const char *name_);
   /**
+   The speed() method changes the playing speed
+   to speed_ x original speed. E.g. to play at half
+   speed call it with 0.5, for double speed with 2.
+   */
+  void speed(double speed_);
+  double speed() const;
+  /**
    The start() method (re-)starts the playing of the frames.
    */
   bool start();
@@ -157,10 +164,11 @@ private:
 private:
   virtual void draw();
   bool _valid;
-  int _frame;	// current frame
-  FrameInfo *_fi;
   bool _uncache;
   bool _stopped;
+  int _frame; // current frame
+  double _speed;
+  FrameInfo *_fi;
 };
 
 #endif // Fl_Anim_GIF_H

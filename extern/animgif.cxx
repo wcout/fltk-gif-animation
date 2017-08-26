@@ -43,6 +43,34 @@ static void callback(Fl_Widget *o_, void *d_) {
 #endif
 }
 
+static int global_key_handler(int e_)
+{
+  // intercept keys '+' and '-'
+  if (e_ != FL_SHORTCUT)
+    return 0;
+  if (!Fl::event_key('+') && !Fl::event_key('-'))
+    return 0;
+
+  // change speed of current window's animation
+  bool faster = Fl::event_key() == '+';
+  Fl_Widget *wgt = Fl::focus(); // actually gets the window here in this program!
+  if (wgt) {
+    Fl_Window *win = (Fl_Window *)wgt;
+    Fl_Anim_GIF *animgif = (Fl_Anim_GIF *)win->child(0); // first child is animation
+    double speed = animgif->speed();
+    if (faster) {
+      if (speed < 10) speed += 0.1;
+    }
+    else {
+      if (speed > 0.1) speed -= 0.1; // note: get's down to 0. (rounding?)
+    }
+    animgif->speed(speed);
+    animgif->start(); // call start() for sure, because at 0.0 animation was stopped
+    printf("speed '%s': %f\n", animgif->label(), animgif->speed());
+  }
+  return 1;
+}
+
 Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool close_ = false) {
   Fl_Double_Window *win = new Fl_Double_Window(100, 100);
   win->color(BACKGROUND);
@@ -114,6 +142,7 @@ bool openTestSuite(const char *dir_) {
 //
 int main(int argc_, char *argv_[]) {
   fl_register_images();
+  Fl::add_handler(global_key_handler);
   if (argc_ > 1) {
     if (!strcmp(argv_[1], "-t"))
       openTestSuite(argc_ > 2 ? argv_[2] : "testsuite");
