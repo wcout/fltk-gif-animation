@@ -14,8 +14,8 @@
 // See the GNU General Public License for more details:
 // http://www.gnu.org/licenses/.
 //
-#ifndef Fl_Gif_Anim_H
-#define Fl_Gif_Anim_H
+#ifndef Fl_Anim_GIF_H
+#define Fl_Anim_GIF_H
 
 class Fl_Image;
 class RGB_Image;
@@ -23,11 +23,37 @@ struct FrameInfo;
 
 #include <FL/Fl_Box.H>
 
+/**
+ The Fl_Anim_GIF class supports loading, caching,
+ and drawing of animated Compuserve GIF<SUP>SM</SUP> images.
+ The class loads all images contained in the file and animates
+ them by cycling through them as defined by the delay times in
+ the image file.
+ */
 class Fl_Anim_GIF : public Fl_Box {
   typedef Fl_Box Inherited;
 public:
+  /**
+   The constructor creates an new animated gif object from
+   the given file.
+   If 'start_=true' is specified as parameter (which is the
+   default), it calls start() after successful load.
+   If 'optimize_mem_=true' is specified as parameter (default: false)
+   the loader tries using less memory, by storing frame data
+   not as canvas-sized images but using the sizes defined in
+   the GIF file.
+   The drawbacks are higher cpu usage during playback and maybe
+   minor artefacts when resized.
+   The 'debug_' flag has been used during devolpment of this class,
+   and kept afterwards, as it may still be useful. It is off by
+   default.
+   */
   Fl_Anim_GIF(int x_, int y_, int w_, int h_, const char *name_ = 0,
               bool start_ = true, bool optimize_mem_ = false, bool debug_ = false);
+  /**
+   The destructor stops a running animation and releases all
+   resources.
+   */
   ~Fl_Anim_GIF();
   /**
    Return the width and height of the animation canvas as
@@ -137,4 +163,4 @@ private:
   bool _stopped;
 };
 
-#endif // Fl_Gif_Anim_H
+#endif // Fl_Anim_GIF_H
