@@ -54,7 +54,7 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
   win->color(BackGroundColor);
   if (close_)
     win->callback(quit_cb);
-  printf("\nLoading '%s'%s%s ... ", name_,
+  printf("Loading '%s'%s%s ... ", name_,
     uncache ? " (uncached)" : "",
     optimize_mem ? " (optimized)" : "");
 
