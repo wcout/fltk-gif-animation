@@ -50,6 +50,7 @@ public:
    */
   Fl_Anim_GIF(int x_, int y_, int w_, int h_, const char *name_ = 0,
               bool start_ = true, bool optimize_mem_ = false, bool debug_ = false);
+  Fl_Anim_GIF();
   /**
    The destructor stops a running animation and releases all
    resources.
@@ -70,6 +71,12 @@ public:
    to all frames of the animation.
    */
   virtual void color_average(Fl_Color c_, float i_);
+  /**
+   The virtual copy() method makes a copy of the animated image
+   and resizes all of its frame images to W x H using
+   the current resize method.
+   */
+  virtual Fl_Anim_GIF *copy(int W_, int H_);
   /**
    The desaturate() method applies desaturate() to all frames
    of the animation.

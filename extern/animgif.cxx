@@ -24,6 +24,8 @@
 #define BACKGROUND FL_GRAY
 //#define BACKGROUND FL_BLACK
 
+static bool CopyTest = false;
+
 static void quit_cb(Fl_Widget* w_, void*) {
   exit(0);
 }
@@ -80,14 +82,25 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool clo
   Fl_Anim_GIF *animgif = new Fl_Anim_GIF(0, 0, 0, 0, name_, /*start_=*/false, optimize_mem_, debug_);
   animgif->callback(callback);
   win->end();
+  char buf[200];
   if (animgif->frames()) {
-    double scale = animgif->h() < 100 ? 2 : 1; // test resize() method on small GIF's
-    animgif->resize(scale);
-    win->size(animgif->w(), animgif->h());
-    char buf[200];
-    sprintf(buf, "%s (%d frames) scale=%1.1f", fl_filename_name(name_), animgif->frames(), scale);
+    if (CopyTest) {
+      // test the copy() functionality
+      Fl_Anim_GIF *copied = animgif->copy(400, 400);
+      delete animgif;
+      animgif = copied;
+      win->insert(*animgif, 0);
+      sprintf(buf, "Copy of %s (%d frames)", fl_filename_name(name_), animgif->frames());
+    }
+    else {
+      // test the resize() functionality
+      double scale = animgif->h() < 100 ? 2 : 1; // test resize() method on small GIF's
+      animgif->resize(scale);
+      sprintf(buf, "%s (%d frames) scale=%1.1f", fl_filename_name(name_), animgif->frames(), scale);
+    }
     win->tooltip(strdup(buf));
     win->copy_label(buf);
+    win->size(animgif->w(), animgif->h());
     win->show();
     win->wait_for_expose();
     animgif->start();
@@ -143,19 +156,28 @@ bool openTestSuite(const char *dir_) {
 int main(int argc_, char *argv_[]) {
   fl_register_images();
   Fl::add_handler(global_key_handler);
+  int nofile = true;
   if (argc_ > 1) {
-    if (!strcmp(argv_[1], "-t"))
+    if (!strcmp(argv_[1], "-t")) {
+      nofile = false;
       openTestSuite(argc_ > 2 ? argv_[2] : "testsuite");
+    }
     else {
       bool debug = false;
-      for (int i = 1; i < argc_; i++)
+      for (int i = 1; i < argc_; i++) {
         if (!strcmp(argv_[i], "-d"))
           debug = true;
+        if (!strcmp(argv_[i], "-c"))
+          CopyTest = true;
+      }
       for (int i = 1; i < argc_; i++)
-        if (argv_[i][0] != '-')
+        if (argv_[i][0] != '-') {
+          nofile = false;
           openFile(argv_[i], false, debug, debug);
+      }
     }
-  } else {
+  }
+  if (nofile) {
     while (1) {
       const char *filename = fl_file_chooser("Select a GIF image file","*.{gif,GIF}", NULL);
       if (!filename)

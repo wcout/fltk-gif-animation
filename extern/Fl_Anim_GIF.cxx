@@ -167,8 +167,6 @@ Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_, int w_, int h_,
   _frame(-1),
   _speed(1),
   _fi(new FrameInfo()) {
-  if (!_fi)
-    return;
   _fi->debug = debug_;
   _fi->optimize_mem = optimize_mem_;
   load(name_);
@@ -178,6 +176,16 @@ Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_, int w_, int h_,
   }
   if (start_)
     start();
+}
+
+Fl_Anim_GIF::Fl_Anim_GIF() :
+  Inherited(0, 0, 0, 0),
+  _valid(false),
+  _uncache(false),
+  _stopped(false),
+  _frame(-1),
+  _speed(1),
+  _fi(new FrameInfo()) {
 }
 
 Fl_Anim_GIF::~Fl_Anim_GIF() {
@@ -245,9 +253,9 @@ void Fl_Anim_GIF::set_frame(int frame_) {
   }
 
   Inherited::image(image());
-  if ((last_frame >= 0 && (_fi->frames[last_frame].dispose == DISPOSE_BACKGROUND ||
+  if (parent() && ((last_frame >= 0 && (_fi->frames[last_frame].dispose == DISPOSE_BACKGROUND ||
      _fi->frames[last_frame].dispose == DISPOSE_PREVIOUS)) ||
-     (_frame == 0 ))
+     (_frame == 0 )))
     parent()->redraw();
   else
     redraw();
@@ -486,6 +494,41 @@ bool Fl_Anim_GIF::debug() const {
 void Fl_Anim_GIF::cb_animate(void *d_) {
   Fl_Anim_GIF *b = (Fl_Anim_GIF *)d_;
   b->next_frame();
+}
+
+/*virtual*/
+Fl_Anim_GIF * Fl_Anim_GIF::copy(int W_, int H_) {
+  Fl_Anim_GIF *copied = new Fl_Anim_GIF();
+  // copy/resize the animated gif frames (Fl_RGB_Image array)
+  for (int i = 0; i < _fi->frames_size; i++) {
+    if (!push_back_frame(copied->_fi, &_fi->frames[i])) {
+      break;
+    }
+    if (_fi->optimize_mem) {
+      double scale_factor_x = (double)W_ / (double)w();
+      double scale_factor_y = (double)H_ / (double)h();
+      copied->_fi->frames[i].x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
+      copied->_fi->frames[i].y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
+      int new_w = (int)((double)_fi->frames[i].w * scale_factor_x + .5);
+      int new_h = (int)((double)_fi->frames[i].h * scale_factor_y + .5);
+      copied->_fi->frames[i].w = new_w;
+      copied->_fi->frames[i].h = new_h;
+      copied->_fi->frames[i].rgb = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(new_w, new_h);
+    }
+    else {
+      copied->_fi->frames[i].rgb = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(W_, H_);
+    }
+  }
+  copied->w(W_);
+  copied->h(H_);
+  copied->_fi->canvas_w = W_;
+  copied->_fi->canvas_h = H_;
+  copied->_fi->optimize_mem = _fi->optimize_mem;
+  copied->_uncache = _uncache; // copy 'inherits' frame uncache status
+  copied->_valid = _valid && copied->_fi->frames_size == _fi->frames_size;
+  if (copied->_valid && _frame >= 0 && !Fl::has_timeout(cb_animate, copied))
+    copied->start(); // start if original also was started
+  return copied;
 }
 
 Fl_Anim_GIF& Fl_Anim_GIF::resize(int W_, int H_) {
