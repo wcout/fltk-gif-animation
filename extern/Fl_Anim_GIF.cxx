@@ -278,6 +278,122 @@ bool Fl_Anim_GIF::next_frame() {
   return true;
 }
 
+//
+// This routine is a modified version of GIFLIB's
+// DGifSlurp(), that reads only one image per time.
+//
+
+static SavedImage *DGifSlurpImage(GifFileType *GifFile) {
+  size_t ImageSize;
+  GifRecordType RecordType(UNDEFINED_RECORD_TYPE);
+  SavedImage *sp;
+  GifByteType *ExtData;
+  int ExtFunction;
+
+  GifFile->ExtensionBlocks = NULL;
+  GifFile->ExtensionBlockCount = 0;
+
+  do {
+    if (DGifGetRecordType(GifFile, &RecordType) == GIF_ERROR)
+      return (0);
+
+    switch (RecordType) {
+      case IMAGE_DESC_RECORD_TYPE:
+        if (DGifGetImageDesc(GifFile) == GIF_ERROR)
+          return (0);
+
+        sp = &GifFile->SavedImages[GifFile->ImageCount - 1];
+        /* Allocate memory for the image */
+        if (sp->ImageDesc.Width < 0 && sp->ImageDesc.Height < 0 &&
+            sp->ImageDesc.Width > (INT_MAX / sp->ImageDesc.Height)) {
+          return 0;
+        }
+        ImageSize = sp->ImageDesc.Width * sp->ImageDesc.Height;
+
+        if (ImageSize > (SIZE_MAX / sizeof(GifPixelType))) {
+          return 0;
+        }
+        sp->RasterBits = (unsigned char *)reallocarray(NULL, ImageSize,
+                         sizeof(GifPixelType));
+
+        if (sp->RasterBits == NULL) {
+          return 0;
+        }
+
+        if (sp->ImageDesc.Interlace) {
+          int i, j;
+          /*
+           * The way an interlaced image should be read -
+           * offsets and jumps...
+           */
+          int InterlacedOffset[] = { 0, 4, 2, 1 };
+          int InterlacedJumps[] = { 8, 8, 4, 2 };
+          /* Need to perform 4 passes on the image */
+          for (i = 0; i < 4; i++)
+            for (j = InterlacedOffset[i];
+                 j < sp->ImageDesc.Height;
+                 j += InterlacedJumps[i]) {
+              if (DGifGetLine(GifFile,
+                              sp->RasterBits+j*sp->ImageDesc.Width,
+                              sp->ImageDesc.Width) == GIF_ERROR)
+                return 0;
+            }
+        } else {
+          if (DGifGetLine(GifFile,sp->RasterBits,ImageSize)==GIF_ERROR)
+            return (0);
+        }
+
+        if (GifFile->ExtensionBlocks) {
+          sp->ExtensionBlocks = GifFile->ExtensionBlocks;
+          sp->ExtensionBlockCount = GifFile->ExtensionBlockCount;
+
+          GifFile->ExtensionBlocks = NULL;
+          GifFile->ExtensionBlockCount = 0;
+        }
+        /* return image pointer */
+        return sp;
+
+      case EXTENSION_RECORD_TYPE:
+        if (DGifGetExtension(GifFile,&ExtFunction,&ExtData) == GIF_ERROR)
+          return (GIF_ERROR);
+        /* Create an extension block with our data */
+        if (ExtData != NULL) {
+          if (GifAddExtensionBlock(&GifFile->ExtensionBlockCount,
+                                   &GifFile->ExtensionBlocks,
+                                   ExtFunction, ExtData[0], &ExtData[1])
+              == GIF_ERROR)
+            return (0);
+        }
+        while (ExtData != NULL) {
+          if (DGifGetExtensionNext(GifFile, &ExtData) == GIF_ERROR)
+            return (0);
+          /* Continue the extension block */
+          if (ExtData != NULL)
+            if (GifAddExtensionBlock(&GifFile->ExtensionBlockCount,
+                                     &GifFile->ExtensionBlocks,
+                                     CONTINUE_EXT_FUNC_CODE,
+                                     ExtData[0], &ExtData[1]) == GIF_ERROR)
+              return (0);
+        }
+        break;
+
+      case TERMINATE_RECORD_TYPE:
+        break;
+
+      default:    /* Should be trapped by DGifGetRecordType */
+        break;
+    }
+  } while (RecordType != TERMINATE_RECORD_TYPE);
+
+  /* Sanity check for corrupted file */
+  if (GifFile->ImageCount == 0) {
+    GifFile->Error = D_GIF_ERR_NO_IMAG_DSCR;
+    return (0);
+  }
+
+  return 0;
+}
+
 bool Fl_Anim_GIF::load(const char *name_) {
   DEBUG(("Fl_Anim_GIF:::load '%s'\n", name_));
   clear_frames();
@@ -303,9 +419,10 @@ bool Fl_Anim_GIF::load(const char *name_) {
                               gifFileIn->SColorMap->Colors[_fi->background_color_index].Blue);
   }
 
-  // read whole file
-  if (DGifSlurp(gifFileIn) == GIF_ERROR) {
-    Fl::error("Fl_Anim_GIF read '%s': %s", name_, GifErrorString(errorCode));
+  // read first image
+  SavedImage *image = DGifSlurpImage(gifFileIn);
+  if (!image) {
+    Fl::error("Fl_Anim_GIF %s: %s\n", name_, GifErrorString(errorCode));
     DGifCloseFile(gifFileIn, &errorCode);
     return false;
   }
@@ -314,9 +431,8 @@ bool Fl_Anim_GIF::load(const char *name_) {
   // process all frames
   GraphicsControlBlock gcb = {};
   gcb.TransparentColor = NO_TRANSPARENT_COLOR;
-  for (int i = 0; i < gifFileIn->ImageCount; i++) {
+  while (image) {
     GifFrame &frame = _fi->frame;
-    SavedImage *image = &gifFileIn->SavedImages[i];
     GifImageDesc *id = &image->ImageDesc;
 
     ColorMapObject *ColorMap = id->ColorMap ? id->ColorMap : gifFileIn->SColorMap;
@@ -408,6 +524,7 @@ bool Fl_Anim_GIF::load(const char *name_) {
     // free compressed data
     free(image->RasterBits);
     image->RasterBits = 0;
+    image = DGifSlurpImage(gifFileIn);
     _frame++;
   }
   DGifCloseFile(gifFileIn, &errorCode);
