@@ -287,7 +287,7 @@ bool Fl_Anim_GIF::load(const char *name_) {
   GifFileType *gifFileIn;
   int errorCode;
   if ((gifFileIn = DGifOpenFileName(name_, &errorCode)) == NULL) {
-    fprintf(stderr, "open '%s': %s\n", name_, GifErrorString(errorCode));
+    Fl::error("Fl_Anim_GIF open '%s': %s", name_, GifErrorString(errorCode));
     return false;
   }
   DEBUG(("%d x %d  BG=%d aspect %d\n", gifFileIn->SWidth, gifFileIn->SHeight, gifFileIn->SBackGroundColor, gifFileIn->AspectByte));
@@ -305,7 +305,7 @@ bool Fl_Anim_GIF::load(const char *name_) {
 
   // read whole file
   if (DGifSlurp(gifFileIn) == GIF_ERROR) {
-    fprintf(stderr, "slurp '%s': %s\n", name_, GifErrorString(errorCode));
+    Fl::error("Fl_Anim_GIF read '%s': %s", name_, GifErrorString(errorCode));
     DGifCloseFile(gifFileIn, &errorCode);
     return false;
   }
@@ -349,7 +349,7 @@ bool Fl_Anim_GIF::load(const char *name_) {
       }
     }
     if (!ColorMap) {
-      fprintf(stderr, "Gif Image does not have a colormap\n");
+      Fl::error("Fl_Anim_GIF '%s' does not have a colormap", name_);
       DGifCloseFile(gifFileIn, &errorCode);
       return false;
     }

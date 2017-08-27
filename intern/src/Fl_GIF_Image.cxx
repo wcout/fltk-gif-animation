@@ -752,7 +752,7 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
     }
     if (!ColorMap) {
       // TODO: use same fix as in first image!?
-      fprintf(stderr, "Gif Image does not have a colormap\n");
+      Fl::error("Fl_Anim_Gif_Image '%s' does not have a colormap", name_);
       close_gif_file();
       return false;
     }
