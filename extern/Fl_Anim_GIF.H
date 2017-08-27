@@ -50,7 +50,6 @@ public:
    */
   Fl_Anim_GIF(int x_, int y_, int w_, int h_, const char *name_ = 0,
               bool start_ = true, bool optimize_mem_ = false, bool debug_ = false);
-  Fl_Anim_GIF();
   /**
    The destructor stops a running animation and releases all
    resources.
@@ -169,6 +168,7 @@ protected:
 private:
   static void cb_animate(void *d_);
 private:
+  Fl_Anim_GIF();
   virtual void draw();
   bool _valid;
   bool _uncache;
