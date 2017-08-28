@@ -25,6 +25,7 @@
 //#define BACKGROUND FL_BLACK
 
 static bool CopyTest = false;
+static bool CallbackTest = false;
 
 static void quit_cb(Fl_Widget* w_, void*) {
   exit(0);
@@ -33,16 +34,15 @@ static void quit_cb(Fl_Widget* w_, void*) {
 static void callback(Fl_Widget *o_, void *d_) {
   // this is called each time the frame image changes (to the next frame)
   Fl_Anim_GIF *animgif = (Fl_Anim_GIF *)o_;
-  if (animgif->debug()) {
-    printf( "'%s': displaying frame %d/%d, delay %fs\n",
-      animgif->label(),
-      animgif->frame()+1, animgif->frames(), animgif->delay(animgif->frame()));
-  }
-#if 0
+  printf( "'%s': displaying frame %d/%d, delay %fs\n",
+    animgif->label(),
+    animgif->frame()+1, animgif->frames(), animgif->delay(animgif->frame()));
   // stop animation after one complete pass
   if (animgif->frame()+1 == animgif->frames())
+  {
     animgif->stop();
-#endif
+    printf( "'%s': stopped after one pass\n", animgif->label());
+  }
 }
 
 static int global_key_handler(int e_)
@@ -50,20 +50,25 @@ static int global_key_handler(int e_)
   // intercept keys '+' and '-'
   if (e_ != FL_SHORTCUT)
     return 0;
-  if (!Fl::event_key('+') && !Fl::event_key('-'))
+  bool faster = Fl::event_key('+');
+  bool slower = Fl::event_key('-');
+  bool reset = Fl::event_key('0');
+  if (!faster && !slower && !reset)
     return 0;
 
   // change speed of current window's animation
-  bool faster = Fl::event_key() == '+';
   Fl_Widget *wgt = Fl::focus(); // actually gets the window here in this program!
   if (wgt) {
     Fl_Window *win = (Fl_Window *)wgt;
     Fl_Anim_GIF *animgif = (Fl_Anim_GIF *)win->child(0); // first child is animation
     double speed = animgif->speed();
+    if (reset) {
+      speed = 1.;
+    }
     if (faster) {
       if (speed < 10) speed += 0.1;
     }
-    else {
+    else if (slower) {
       if (speed > 0.1) speed -= 0.1; // note: get's down to 0. (rounding?)
     }
     animgif->speed(speed);
@@ -80,7 +85,6 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool clo
     win->callback(quit_cb);
   printf("Loading '%s'\n", name_);
   Fl_Anim_GIF *animgif = new Fl_Anim_GIF(0, 0, 0, 0, name_, /*start_=*/false, optimize_mem_, debug_);
-  animgif->callback(callback);
   win->end();
   char buf[200];
   if (animgif->frames()) {
@@ -103,8 +107,11 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool clo
     win->size(animgif->w(), animgif->h());
     win->show();
     win->wait_for_expose();
+    if (CallbackTest)
+      animgif->callback(callback);
     animgif->start();
-  } else {
+  }
+  else {
     delete win;
     return 0;
   }
@@ -169,6 +176,8 @@ int main(int argc_, char *argv_[]) {
           debug = true;
         if (!strcmp(argv_[i], "-c"))
           CopyTest = true;
+        if (!strcmp(argv_[i], "-x"))
+          CallbackTest = true;
       }
       for (int i = 1; i < argc_; i++)
         if (argv_[i][0] != '-') {

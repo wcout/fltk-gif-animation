@@ -642,6 +642,7 @@ Fl_Anim_GIF * Fl_Anim_GIF::copy(int W_, int H_) {
   copied->_fi->canvas_h = H_;
   copied->_fi->optimize_mem = _fi->optimize_mem;
   copied->_uncache = _uncache; // copy 'inherits' frame uncache status
+  copied->copy_label(label());
   copied->_valid = _valid && copied->_fi->frames_size == _fi->frames_size;
   if (copied->_valid && _frame >= 0 && !Fl::has_timeout(cb_animate, copied))
     copied->start(); // start if original also was started
