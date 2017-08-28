@@ -259,7 +259,12 @@ void Fl_Anim_GIF::set_frame(int frame_) {
     parent()->redraw();
   else
     redraw();
-  do_callback();
+  static bool recurs = false;
+  if (!recurs) {
+    recurs = true;
+    do_callback();
+    recurs = false;
+  }
 }
 
 bool Fl_Anim_GIF::next_frame() {

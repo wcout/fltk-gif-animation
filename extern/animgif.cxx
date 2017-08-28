@@ -63,7 +63,9 @@ static int global_key_handler(int e_)
     Fl_Anim_GIF *animgif = (Fl_Anim_GIF *)win->child(0); // first child is animation
     double speed = animgif->speed();
     if (reset) {
+      animgif->stop();
       speed = 1.;
+      animgif->frame(0);
     }
     if (faster) {
       if (speed < 10) speed += 0.1;
@@ -72,8 +74,8 @@ static int global_key_handler(int e_)
       if (speed > 0.1) speed -= 0.1; // note: get's down to 0. (rounding?)
     }
     animgif->speed(speed);
-    animgif->start(); // call start() for sure, because at 0.0 animation was stopped
     printf("speed '%s': %f\n", animgif->label(), animgif->speed());
+    animgif->start(); // call start() for sure, because at 0.0 animation was stopped
   }
   return 1;
 }
