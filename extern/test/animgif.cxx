@@ -14,7 +14,7 @@
 // See the GNU General Public License for more details:
 // http://www.gnu.org/licenses/.
 //
-#include "Fl_Anim_GIF.cxx" // include the widget code directly
+#include "../Fl_Anim_GIF.cxx" // include the widget code directly
 
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_File_Chooser.H>

@@ -1,7 +1,7 @@
 //
 //  Test program for Fl_Anim_GIF::copy().
 //
-#include "Fl_Anim_GIF.cxx"
+#include "../Fl_Anim_GIF.cxx"
 #include <FL/Fl_Image.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Double_Window.H>
