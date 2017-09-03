@@ -1,21 +1,22 @@
 //
-//  Test program for Fl_Anim_GIF_Image::copy().
+//  Test program for Fl_Anim_GIF::copy().
 //
-#include <FL/Fl_Anim_GIF_Image.H>
+#include "Fl_Anim_GIF.cxx"
 #include <FL/Fl_Image.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Double_Window.H>
+#include <FL/Fl_Group.H>
 #include <FL/Fl.H>
 #include <FL/fl_draw.H>
 #include <cstdio>
 
-static Fl_Anim_GIF_Image *orig = 0;
+static Fl_Anim_GIF *orig = 0;
 static bool draw_grid = true;
 
-class Canvas : public Fl_Box {
-  typedef Fl_Box Inherited;
+class Canvas : public Fl_Group {
+  typedef Fl_Group Inherited;
 public:
-  Canvas(int x_, int y_, int w_, int h_) :
+  Canvas(int x_, int y_, int w_, int h_ ) :
     Inherited(x_, y_, w_, h_) {}
   virtual void draw() {
     if (draw_grid) {
@@ -34,23 +35,23 @@ public:
     Inherited::draw();
   }
   void do_resize(int W_, int H_) {
-    if (image() && (image()->w() != W_ || image()->h() != H_)) {
-      Fl_Anim_GIF_Image *animgif = (Fl_Anim_GIF_Image *)image();
+    if (!children()) return;
+    Fl_Anim_GIF *animgif = (Fl_Anim_GIF *)child(0);
+    if (animgif->canvas_w() != W_ || animgif->canvas_w() != H_) {
       animgif->stop();
-      image(0);
+      remove(0);
       // delete already copied images
       if (animgif != orig ) {
         delete animgif;
       }
-      Fl_Anim_GIF_Image *copied = (Fl_Anim_GIF_Image *)orig->copy(W_, H_);
+      Fl_Anim_GIF *copied = orig->copy(W_, H_);
       if (!copied->valid()) { // check success of copy
-        Fl::warning("Fl_Anim_GIF_Image::copy() %d x %d failed", W_, H_);
+        Fl::warning("Fl_Anim_GIF::copy() %d x %d failed", W_, H_);
       }
       else {
         printf("resized to %d x %d\n", copied->w(), copied->h());
       }
-      copied->canvas(this, Fl_Anim_GIF_Image::Start |
-                     Fl_Anim_GIF_Image::DontResizeCanvas);
+      insert(*copied, 0);
       copied->start();
     }
     window()->cursor(FL_CURSOR_DEFAULT);
@@ -96,8 +97,7 @@ int main(int argc_, char *argv_[]) {
 
   Fl_Double_Window win(640, 480);
 
-  // prepare a canvas for the animation
-  // (we want to show it in the center of the window)
+  // prepare a container for the animation
   Canvas canvas(0, 0, win.w(), win.h());
   win.resizable(win);
 
@@ -105,20 +105,16 @@ int main(int argc_, char *argv_[]) {
   win.show();
 
   // create/load the animated gif and start it immediately.
-  // We use the 'DontResizeCanvas' flag here to tell the
-  // animation not to change the canvas size (which is the default).
-  int flags = Fl_Anim_GIF_Image::Start | Fl_Anim_GIF_Image::DontResizeCanvas;
   if (optimize) {
-    flags |= Fl_Anim_GIF_Image::OptimizeMemory;
     printf("Using memory optimization (if image supports)\n");
   }
-  orig = new Fl_Anim_GIF_Image(/*name_=*/ fileName,
-                             /*canvas_=*/ &canvas,
-                              /*flags_=*/ flags );
+  orig = new Fl_Anim_GIF(canvas.x(), canvas.y(), canvas.w(), canvas.h(),
+                         /*name_=*/ fileName, /*start_=*/true, optimize);
+  canvas.insert(*orig, 0);
 
   // check if loading succeeded
   printf("%s: valid: %d frames: %d uncache: %d\n",
-    orig->name(), orig->valid(), orig->frames(), orig->frame_uncache());
+    orig->label(), orig->valid(), orig->frames(), orig->uncache());
   if (orig->valid()) {
     win.copy_label(fileName);
 
@@ -135,7 +131,7 @@ int main(int argc_, char *argv_[]) {
       // NOTE: this is *really* slow. Scaling the TrueColor test image
       //       to full HD desktop takes about 45 seconds!
     }
-    orig->frame_uncache(uncache);
+    orig->uncache(uncache);
     if (uncache) {
       printf("Caching disabled - watch cpu load!\n");
     }

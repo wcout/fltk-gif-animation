@@ -429,6 +429,7 @@ struct FrameInfo {
     desaturate(false),
     average_color(FL_BLACK),
     average_weight(-1),
+    scaling((Fl_RGB_Scaling)0),
     debug(false),
     optimize_mem(false),
     offscreen(0) {}
@@ -443,6 +444,7 @@ struct FrameInfo {
   bool desaturate;                         // flag if frames should be desaturated
   Fl_Color average_color;                  // color for color_average()
   float average_weight;                    // weight for color_average (negative: none)
+  Fl_RGB_Scaling scaling;                  // saved scaling method for scale_frame()
   bool debug;                              // Flag for debug outputs
   bool optimize_mem;                       // Flag to store frames in original dimensions
   uchar *offscreen;                        // internal "offscreen" buffer to build frames
@@ -606,12 +608,31 @@ static bool push_back_frame(FrameInfo *fi_, GifFrame *frame_) {
   return true;
 }
 
+void Fl_Anim_GIF_Image::scale_frame() {
+  int i(_frame);
+  if (i < 0)
+    return;
+  Fl_RGB_Scaling scaling = Fl_Image::RGB_scaling();
+  int new_w = _fi->optimize_mem ? _fi->frames[i].w : _fi->canvas_w;
+  int new_h = _fi->optimize_mem ? _fi->frames[i].h : _fi->canvas_h;
+  if (_fi->frames[i].rgb->w() == new_w && _fi->frames[i].rgb->h() == new_h)
+    return;
+  Fl_Image::RGB_scaling(_fi->scaling);
+  Fl_RGB_Image *copied = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(new_w, new_h);
+  delete _fi->frames[i].rgb;
+  _fi->frames[i].rgb = copied;
+  Fl_Image::RGB_scaling(scaling);
+}
+
 void Fl_Anim_GIF_Image::set_frame(int frame_) {
   int last_frame = _frame;
   _frame = frame_;
   // NOTE: uncaching decreases performance, but saves a lot of memory
   if (_uncache && this->image())
     this->image()->uncache();
+
+  // scaling pending?
+  scale_frame();
 
   // color average pending?
   if (_fi->average_weight >= 0 && _fi->average_weight < 1 &&
@@ -917,15 +938,27 @@ bool Fl_Anim_GIF_Image::valid() const {
   return _valid;
 }
 
-int Fl_Anim_GIF_Image::x(int frame_) const {
+int Fl_Anim_GIF_Image::frame_x(int frame_) const {
   if (frame_ >= 0 && frame_ < frames())
     return _fi->frames[frame_].x;
   return -1;
 }
 
-int Fl_Anim_GIF_Image::y(int frame_) const {
+int Fl_Anim_GIF_Image::frame_y(int frame_) const {
   if (frame_ >= 0 && frame_ < frames())
     return _fi->frames[frame_].y;
+  return -1;
+}
+
+int Fl_Anim_GIF_Image::frame_w(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].w;
+  return -1;
+}
+
+int Fl_Anim_GIF_Image::frame_h(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].h;
   return -1;
 }
 
@@ -953,32 +986,32 @@ Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
     h(_fi->canvas_h);
   }
   // copy/resize the animated gif frames (Fl_RGB_Image array)
+  double scale_factor_x = (double)W_ / (double)w();
+  double scale_factor_y = (double)H_ / (double)h();
   for (int i = 0; i < _fi->frames_size; i++) {
     if (!push_back_frame(copied->_fi, &_fi->frames[i])) {
       break;
     }
     if (_fi->optimize_mem) {
-      double scale_factor_x = (double)W_ / (double)w();
-      double scale_factor_y = (double)H_ / (double)h();
       copied->_fi->frames[i].x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
       copied->_fi->frames[i].y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
       int new_w = (int)((double)_fi->frames[i].w * scale_factor_x + .5);
       int new_h = (int)((double)_fi->frames[i].h * scale_factor_y + .5);
       copied->_fi->frames[i].w = new_w;
       copied->_fi->frames[i].h = new_h;
-      copied->_fi->frames[i].rgb = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(new_w, new_h);
     }
-    else {
-      copied->_fi->frames[i].rgb = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(W_, H_);
-    }
+    // just copy data 1:1 now - scaling will be done adhoc when frame is displayed
+    copied->_fi->frames[i].rgb = (Fl_RGB_Image *)_fi->frames[i].rgb->copy();
   }
   copied->w(W_);
   copied->h(H_);
   copied->_fi->canvas_w = W_;
   copied->_fi->canvas_h = H_;
   copied->_fi->optimize_mem = _fi->optimize_mem;
+  copied->_fi->scaling = Fl_Image::RGB_scaling(); // save current scaling mode
   copied->_uncache = _uncache; // copy 'inherits' frame uncache status
   copied->_valid = _valid && copied->_fi->frames_size == _fi->frames_size;
+  scale_frame(); // scale current frame now
   if (copied->_valid && _frame >= 0 && !Fl::has_timeout(cb_animate, copied))
     copied->start(); // start if original also was started
   return copied;
@@ -994,30 +1027,24 @@ Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(int W_, int H_) {
   if (!W || !H || ((W == w() && H == h()))) {
     return *this;
   }
+  double scale_factor_x = (double)W / (double)w();
+  double scale_factor_y = (double)H / (double)h();
   for (int i=0; i < _fi->frames_size; i++) {
-    Fl_RGB_Image *rgb =  _fi->frames[i].rgb;
     if (_fi->optimize_mem) {
-      double scale_factor_x = (double)W / (double)w();
-      double scale_factor_y = (double)H / (double)h();
-      int new_x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
-      int new_y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
+      _fi->frames[i].x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
+      _fi->frames[i].y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
       int new_w = (int)((double)_fi->frames[i].w * scale_factor_x + .5);
       int new_h = (int)((double)_fi->frames[i].h * scale_factor_y + .5);
-      _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(new_w, new_h);
-      _fi->frames[i].x = new_x;
-      _fi->frames[i].y = new_y;
       _fi->frames[i].w = new_w;
       _fi->frames[i].h = new_h;
     }
-    else {
-      _fi->frames[i].rgb = (Fl_RGB_Image *)rgb->copy(W, H);
-    }
-    delete rgb;
   }
   w(W);
   h(H);
   _fi->canvas_w = w();
   _fi->canvas_h = h();
+  _fi->scaling = Fl_Image::RGB_scaling(); // save current scaling mode
+  scale_frame(); // scale current frame now
   if (_canvas) {
     _canvas->size(w(), h());
   }

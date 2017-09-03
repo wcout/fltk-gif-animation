@@ -132,8 +132,8 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
       int w = animgif->image(i)->w();
       int h = animgif->image(i)->h();
       // in 'optimize_mem' mode frames must be offsetted to canvas
-      int x = (w == animgif->w() && h == animgif->h()) ? 0 : animgif->x(i);
-      int y = (w == animgif->w() && h == animgif->h()) ? 0 : animgif->y(i);
+      int x = (w == animgif->w() && h == animgif->h()) ? 0 : animgif->frame_x(i);
+      int y = (w == animgif->w() && h == animgif->h()) ? 0 : animgif->frame_y(i);
       Fl_Box *b = new Fl_Box(x, y, w, h);
       // get the frame image
       b->image(animgif->image(i));

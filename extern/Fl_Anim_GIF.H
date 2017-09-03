@@ -157,6 +157,20 @@ public:
    */
   bool valid() const;
   /**
+   Return the frame position of frame 'frame_'
+   Usefull only if loaded with 'optimize_mem' and
+   the animation also has size optimized frames.
+   */
+  int frame_x(int frame_) const;
+  int frame_y(int frame_) const;
+  /**
+   Return the frame dimensions of frame 'frame_'.
+   Usefull only if loaded with 'optimize_mem' and
+   the animation also has size optimized frames.
+   */
+  int frame_w(int frame_) const;
+  int frame_h(int frame_) const;
+  /**
    The debug() method returns if the class has
    set the debug option in it's constructor.
    */
@@ -167,6 +181,7 @@ protected:
   void set_frame(int frame_);
 private:
   static void cb_animate(void *d_);
+  void scale_frame();
 private:
   Fl_Anim_GIF();
   virtual void draw();

@@ -197,15 +197,25 @@ public:
   bool valid() const;
   /**
    Return the frame position of frame 'frame_'
+   Usefull only if loaded with 'optimize_mem' and
+   the animation also has size optimized frames.
    */
-  int x(int frame_) const;
-  int y(int frame_) const;
+  int frame_x(int frame_) const;
+  int frame_y(int frame_) const;
+  /**
+   Return the frame dimensions of frame 'frame_'.
+   Usefull only if loaded with 'optimize_mem' and
+   the animation also has size optimized frames.
+   */
+  int frame_w(int frame_) const;
+  int frame_h(int frame_) const;
 protected:
   bool next_frame();
   void clear_frames();
   void set_frame(int frame_);
 private:
   static void cb_animate(void *d_);
+  void scale_frame();
 private:
   char *_name;
   Fl_Widget *_canvas;
