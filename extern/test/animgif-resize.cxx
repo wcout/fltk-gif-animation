@@ -17,7 +17,11 @@ class Canvas : public Fl_Group {
   typedef Fl_Group Inherited;
 public:
   Canvas(int x_, int y_, int w_, int h_ ) :
-    Inherited(x_, y_, w_, h_) {}
+    Inherited(x_, y_, w_, h_)
+	{
+		if (!draw_grid)
+			box(FL_FLAT_BOX);
+	}
   virtual void draw() {
     if (draw_grid) {
       // draw a transparency grid as background
