@@ -181,7 +181,7 @@ protected:
   void set_frame(int frame_);
 private:
   static void cb_animate(void *d_);
-  void scale_frame();
+  void scale_frame(int frame_ = -1);
 private:
   Fl_Anim_GIF();
   virtual void draw();

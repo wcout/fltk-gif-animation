@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <cmath> // lround()
 #include <FL/Fl_RGB_Image.H>
+#include <FL/Fl_Shared_Image.H>
 #include <FL/Fl.H>
 
 enum Transparency {
@@ -42,6 +43,7 @@ struct RGBA_Color {
 struct GifFrame {
   GifFrame() :
     rgb(0),
+    scalable(0),
     average_color(FL_BLACK),
     average_weight(-1),
     desaturated(false),
@@ -53,6 +55,7 @@ struct GifFrame {
     dispose(0),
     transparent_color_index(-1) {}
   Fl_RGB_Image *rgb;                       // full frame image
+  Fl_Shared_Image *scalable;               // used for hardware-accelerated scaling
   Fl_Color average_color;                  // last average color
   float average_weight;                    // last average weight
   bool desaturated;                        // flag if frame is desaturated
@@ -213,6 +216,8 @@ bool Fl_Anim_GIF::stop() {
 
 void Fl_Anim_GIF::clear_frames() {
   while (_fi->frames_size--) {
+    if (_fi->frames[_fi->frames_size].scalable)
+      _fi->frames[_fi->frames_size].scalable->release();
     delete _fi->frames[_fi->frames_size].rgb;
   }
   free(_fi->frames);
@@ -232,19 +237,30 @@ static bool push_back_frame(FrameInfo *fi_, GifFrame *frame_) {
   return true;
 }
 
-void Fl_Anim_GIF::scale_frame() {
-  int i(_frame);
-  if (i < 0)
+void Fl_Anim_GIF::scale_frame(int frame_/* = -1*/) {
+  int i(frame_ >= 0 ? frame_ : _frame);
+  if (i < 0 || i >= _fi->frames_size)
     return;
   Fl_RGB_Scaling scaling = Fl_Image::RGB_scaling();
   int new_w = _fi->optimize_mem ? _fi->frames[i].w : _fi->canvas_w;
   int new_h = _fi->optimize_mem ? _fi->frames[i].h : _fi->canvas_h;
-  if (_fi->frames[i].rgb->w() == new_w && _fi->frames[i].rgb->h() == new_h)
+  if (_fi->frames[i].scalable &&
+      _fi->frames[i].scalable->w() == new_w &&
+      _fi->frames[i].scalable->h() == new_h)
+    return;
+  else if (_fi->frames[i].rgb->w() == new_w && _fi->frames[i].rgb->h() == new_h)
     return;
   Fl_Image::RGB_scaling(_fi->scaling);
+#if FL_ABI_VERSION >= 10304 && USE_SHIMAGE_SCALING
+  if (!_fi->frames[i].scalable) {
+    _fi->frames[i].scalable = Fl_Shared_Image::get(_fi->frames[i].rgb, 0);
+  }
+  _fi->frames[i].scalable->scale(new_w, new_h, 0, 1);
+#else
   Fl_RGB_Image *copied = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(new_w, new_h);
   delete _fi->frames[i].rgb;
   _fi->frames[i].rgb = copied;
+#endif
   Fl_Image::RGB_scaling(scaling);
 }
 
@@ -671,8 +687,8 @@ Fl_Anim_GIF * Fl_Anim_GIF::copy(int W_, int H_) {
     if (!push_back_frame(copied->_fi, &_fi->frames[i])) {
       break;
     }
-    double scale_factor_x = (double)W_ / (double)w();
-    double scale_factor_y = (double)H_ / (double)h();
+    double scale_factor_x = (double)W_ / (double)canvas_w();
+    double scale_factor_y = (double)H_ / (double)canvas_h();
     if (_fi->optimize_mem) {
       copied->_fi->frames[i].x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
       copied->_fi->frames[i].y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
@@ -754,13 +770,20 @@ void Fl_Anim_GIF::draw() {
       for (int f = f0; f <= _frame; f++) {
         if (f < _frame && _fi->frames[f].dispose == DISPOSE_PREVIOUS) continue;
         if (f < _frame && _fi->frames[f].dispose == DISPOSE_BACKGROUND) continue;
-        Fl_RGB_Image *rgb = _fi->frames[f].rgb;
-        if (rgb) {
-          rgb->draw(x() + _fi->frames[f].x, y() + _fi->frames[f].y);
+        scale_frame(f);
+        if (_fi->frames[f].scalable) {
+          _fi->frames[f].scalable->draw(x() + _fi->frames[f].x, y() + _fi->frames[f].y);
+        }
+        else if (_fi->frames[f].rgb) {
+          _fi->frames[f].rgb->draw(x() + _fi->frames[f].x, y() +_fi->frames[f].y);
         }
       }
     }
     else {
+      if (_fi->frames[_frame].scalable) {
+        _fi->frames[_frame].scalable->draw(x(), y());
+        return;
+      }
       this->image()->draw(x(), y());
     }
   }

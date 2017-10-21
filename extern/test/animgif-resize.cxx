@@ -13,10 +13,22 @@
 static Fl_Anim_GIF *orig = 0;
 static bool draw_grid = true;
 
+static void dump_shared_images()
+{
+  int numImages = Fl_Shared_Image::num_images();
+  Fl_Shared_Image **images = Fl_Shared_Image::images();
+  printf("Shared images: %d\n", numImages);
+  for ( int i = 0; i < numImages; i++)
+  {
+    printf("%02u [%d] '%s' %d x %d\n", i+1, images[i]->refcount(),
+           images[i]->name(), images[i]->w(), images[i]->h());
+	}
+}
+
 class Canvas : public Fl_Group {
   typedef Fl_Group Inherited;
 public:
-  Canvas(int x_, int y_, int w_, int h_ ) :
+  Canvas(int x_, int y_, int w_, int h_) :
     Inherited(x_, y_, w_, h_)
 	{
 		if (!draw_grid)
@@ -42,6 +54,21 @@ public:
     if (!children()) return;
     Fl_Anim_GIF *animgif = (Fl_Anim_GIF *)child(0);
     if (animgif->canvas_w() != W_ || animgif->canvas_w() != H_) {
+#if FL_ABI_VERSION >= 10304 && USE_SHIMAGE_SCALING
+      static bool once = false;
+      if (!once) {
+        printf("Using fast shared image scaling\n");
+        if (Fl_RGB_Image::RGB_scaling() == FL_RGB_SCALING_BILINEAR) {
+           printf("**NOTE**: This bypasses bilinear scaling option!\n");
+        }
+      }
+      once = true;
+      // using Fl_Shared_Image::scale(), so no need to reload from original
+      animgif->resize(W_, H_);
+      animgif->start();
+      printf("resized to %d x %d\n", animgif->w(), animgif->h());
+#else
+		// reload from original
       animgif->stop();
       remove(0);
       // delete already copied images
@@ -53,10 +80,11 @@ public:
         Fl::warning("Fl_Anim_GIF::copy() %d x %d failed", W_, H_);
       }
       else {
-        printf("resized to %d x %d\n", copied->w(), copied->h());
+        printf("copy/resized to %d x %d\n", copied->w(), copied->h());
       }
       insert(*copied, 0);
       copied->start();
+#endif
     }
     window()->cursor(FL_CURSOR_DEFAULT);
   }
@@ -73,6 +101,18 @@ public:
     window()->cursor(FL_CURSOR_WAIT);
   }
 };
+
+static int global_shortcut(int event_)
+{
+  // we only handle shortcuts here
+  if (event_ != FL_SHORTCUT) return 0;
+
+  if (Fl::test_shortcut(FL_ALT + 'd')) {
+    dump_shared_images(); // list stored shared images (for debugging purposes only)
+    return 1;
+  }
+  return 0;
+}
 
 int main(int argc_, char *argv_[]) {
   // setup play parameters from args
@@ -129,11 +169,16 @@ int main(int argc_, char *argv_[]) {
     }
     printf("image has %d optimized frames\n", n);
 
+    Fl_RGB_Image::RGB_scaling(FL_RGB_SCALING_NEAREST);
+    Fl_Shared_Image::scaling_algorithm(FL_RGB_SCALING_NEAREST);
     if (bilinear) {
       Fl_RGB_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
+      Fl_Shared_Image::scaling_algorithm(FL_RGB_SCALING_BILINEAR);
       printf("Using bilinear scaling - can be slow!\n");
       // NOTE: this is *really* slow. Scaling the TrueColor test image
       //       to full HD desktop takes about 45 seconds!
+      // 2017/10/21: this has been improved by lazy resize (per frame)
+      //             and by using shared image scale feature.
     }
     orig->uncache(uncache);
     if (uncache) {
@@ -146,6 +191,8 @@ int main(int argc_, char *argv_[]) {
     int H = (double)W / ratio;
     printf("original size: %d x %d\n", orig->w(), orig->h());
     win.size(W, H);
+
+    Fl::add_handler(global_shortcut);
 
     return Fl::run();
   }
