@@ -40,7 +40,7 @@ The files there can be copied directly into the FLTK tree to replace the current
 
 `Fl_Anim_GIF_Image.H` declares the new image class `Fl_Anim_GIF_Image`.
 
-## Current status
+## Current status/history
 
 The current status is promising - it works well, but needs some more tests.
 I will stay with `Solution 2` for now and try to improve a few aspects, but
@@ -96,10 +96,11 @@ Issues remaining:
 
 You can test the different solutions with the test programs in each folder.
 For the `internal` approach you must have `FLTK` as source distribution to replace
-the mentioned files. As said before `Solution 1` is not as advanced as `Solution 2`
-because I did not develop it further after starting with `Solution 2`.
+the mentioned files. <del>As said before `Solution 1` is not as advanced as `Solution 2`
+because I did not develop it further after starting with `Solution 2`.</del>
+Both solutions now offer roughly the same functionality.
 
-There are some crude scripts in the root directory that help to compile the test
+There are some simple scripts in the root directory that help to compile the test
 programs under Linux.
 (Don't use them unless you understand what you are doing...)
 
@@ -120,7 +121,7 @@ Have a look at the [API](https://wcout.github.io/animgif/html/class_fl___anim___
 I am not entirely convinced by the concept of `Solution 2` after all, but it is
 not bad either. On the one hand is _cute_ to use it as a `Fl_Image`, on the other
 hand exactly therefore it seems inappropriate to put more and more playing
-functionality into it.
+functionality into it. The external solution so perhaps seems more advantegous after all..
 
 Perhaps a generic `Fl_Animation` class (or whatever it may be called)
 would make sense - and _one_ constructor for such a class could be an
