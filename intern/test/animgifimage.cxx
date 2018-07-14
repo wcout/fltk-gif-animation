@@ -58,12 +58,13 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
     uncache ? " (uncached)" : "",
     optimize_mem ? " (optimized)" : "");
 
-  // create animation
-  Fl_Box *canvas = test_tiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas for animation
+  // create a canvas for the animation
+  Fl_Box *canvas = test_tiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas will be resized by animation
   unsigned short flags = debug ? Fl_Anim_GIF_Image::Debug : 0;
   if (optimize_mem) {
     flags |= Fl_Anim_GIF_Image::OptimizeMemory;
   }
+  // create animation, specifying this canvas as display widget
   Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, flags);
   printf("%s\n", animgif->valid() ? "OK" : "ERROR" );
   win->user_data(animgif); // store address of image (see note in main())
@@ -115,6 +116,7 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
     win->show();
     win->wait_for_expose();
     win->size(W, H);
+    win->init_sizes(); // IMPORTANT: otherwise weird things happen at Ctrl+/- scaling
     animgif->start();
   } else {
     delete win;
@@ -246,7 +248,7 @@ int main(int argc_, char *argv_[]) {
       //       Fl_Anim_GIF_Image has been stored in the window's user_data.
       //       In a real-life application you will probably store
       //       it somewhere in the window's or canvas' object and destroy
-      //       the image in the window's or cavas' destructor.
+      //       the image in the window's or canvas' destructor.
       if (win->user_data())
         delete ((Fl_Anim_GIF_Image *)win->user_data());
       delete win;

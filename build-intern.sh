@@ -1,8 +1,7 @@
 #!/bin/sh
 
 # put the path to your FLTK repository here
-#fltk=../fltk-1.4
-fltk=~/Downloads/fltk-1.4
+fltk=../fltk-1.4
 
 target=animgifimage
 target1=animgifimage-simple
