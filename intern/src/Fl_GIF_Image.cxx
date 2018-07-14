@@ -69,7 +69,7 @@ static SavedImage *DGifSlurpImage(GifFileType *GifFile) {
         if (ImageSize > (SIZE_MAX / sizeof(GifPixelType))) {
           return 0;
         }
-        sp->RasterBits = (unsigned char *)reallocarray(NULL, ImageSize,
+        sp->RasterBits = (unsigned char *)giflib_reallocarray(NULL, ImageSize,
                          sizeof(GifPixelType));
 
         if (sp->RasterBits == NULL) {

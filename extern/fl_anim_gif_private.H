@@ -223,7 +223,7 @@ static void GifFreeMapObject(ColorMapObject *Object);
 static int GifBitSize(int n);
 
 static void *
-reallocarray(void *optr, size_t nmemb, size_t size);
+giflib_reallocarray(void *optr, size_t nmemb, size_t size);
 
 /******************************************************************************
  Support for the in-core structures allocation (slurp mode).              
@@ -750,7 +750,7 @@ DGifGetImageDesc(GifFileType *GifFile)
 
     if (GifFile->SavedImages) {
         SavedImage* new_saved_images =
-            (SavedImage *)reallocarray(GifFile->SavedImages,
+            (SavedImage *)giflib_reallocarray(GifFile->SavedImages,
                             (GifFile->ImageCount + 1), sizeof(SavedImage));
         if (new_saved_images == NULL) {
             GifFile->Error = D_GIF_ERR_NOT_ENOUGH_MEM;
@@ -1424,7 +1424,7 @@ GifAddExtensionBlock(int *ExtensionBlockCount,
     if (*ExtensionBlocks == NULL)
         *ExtensionBlocks=(ExtensionBlock *)malloc(sizeof(ExtensionBlock));
     else {
-        ExtensionBlock* ep_new = (ExtensionBlock *)reallocarray
+        ExtensionBlock* ep_new = (ExtensionBlock *)giflib_reallocarray
 				 (*ExtensionBlocks, (*ExtensionBlockCount + 1),
                                       sizeof(ExtensionBlock));
         if( ep_new == NULL )
@@ -1527,7 +1527,7 @@ GifFreeSavedImages(GifFileType *GifFile)
 #define MUL_NO_OVERFLOW	((size_t)1 << (sizeof(size_t) * 4))
 
 void *
-reallocarray(void *optr, size_t nmemb, size_t size)
+giflib_reallocarray(void *optr, size_t nmemb, size_t size)
 {
 	if ((nmemb >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) &&
 	    nmemb > 0 && SIZE_MAX / nmemb < size) {
