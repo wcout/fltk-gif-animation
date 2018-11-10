@@ -14,8 +14,8 @@ the interface to FLTK.
 ## Solution 1: External Widget
 
 My first solution was an external Widget `Fl_Anim_GIF`, derived from the basic FLTK widget `Fl_Box`.
-This solution works well and can be found in the folder `extern` (It will probably be not
-developed further - see below).
+This solution works well and can be found in the folder `extern`<del> (It will probably be not
+developed further - see below)</del>.
 
 But Kleine Bre's design approach to expand the `Fl_GIF_Image` class with animation capabilties
 seems advantegeous. On the other hand I did not want to have `Fl_GIF_Image` load animated files
@@ -31,7 +31,7 @@ stores its images directly in RGB-format without an intermittent `XPM`.
 
 This solution can be found in the folder `intern`:
 
-The files there can be copied directly into the FLTK tree to replace the current GIF code.
+The files there can be copied directly into the FLTK source tree to replace the current GIF code.
 
 `Fl_GIF_Image.cxx` contains the new GIF decoding algorithm using `GIFLIB`.
 
@@ -85,7 +85,9 @@ Issues remaining:
 
 *Update 2016/12/03:*
 
-  Finished *all* tasks. Solution 2 is complete now.
+  Finished *all* tasks. Solution 2 is complete now. Speed of rescaling has
+  been improved also vastly by using FLTK's (from version 1.4) image scaling
+  feature in combination with lazy (on-time) rescaling.
 
 *Update 2017/08/26:*
 
