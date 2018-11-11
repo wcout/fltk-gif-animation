@@ -3,7 +3,6 @@
 //  with the Fl_Anim_GIF class.
 //
 #include "../Fl_Anim_GIF.cxx"
-#include <FL/Fl_Box.H>
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl.H>
 #include <cstdio>

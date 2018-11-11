@@ -1,5 +1,5 @@
 //
-// Copyright 2016-2017 Christian Grabner <wcout@gmx.net>
+// Copyright 2016-2018 Christian Grabner <wcout@gmx.net>
 //
 // Fl_Anim_GIF widget - FLTK animated GIF widget.
 //
