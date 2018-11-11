@@ -3,12 +3,20 @@
 # put the path to your FLTK repository here
 fltk=../fltk-1.4
 
-target=animgifimage
-target1=animgifimage-simple
-target2=animgifimage-resize
-target3=animgifimage-play
+targets="animgifimage animgifimage-simple animgifimage-resize animgifimage-play"
 src=intern
 #opt=-pg
+
+fltkconfig=$fltk"/fltk-config"
+if [ ! -d "$fltk" ]; then
+	echo "You must specify a FLTK directory to patch"
+#	exit 1
+fi
+
+if [ ! -f "$fltkconfig" ]; then
+	echo $fltkconfig "not found"
+	exit 1
+fi
 
 # copy files into FLTK repo & compile FLTK
 if [ "$1" = "all" ]; then
@@ -18,15 +26,15 @@ if [ "$1" = "all" ]; then
 
 	cwd=$(pwd)
 	cd $fltk
+	touch FL/Fl_GIF_Image.H
+	touch FL/Fl_Anim_GIF_Image.H
 	make
 	cd $cwd
 fi
 
 # build the testprogram
-g++ -Wall -pipe -pedantic -O3 $opt -o $target `$fltk/fltk-config --use-images --cxxflags` $src/test/$target.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt
-
-g++ -Wall -pipe -pedantic -O3 $opt -o $target1 `$fltk/fltk-config --use-images --cxxflags` $src/test/$target1.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt
-
-g++ -Wall -pipe -pedantic -O3 $opt -o $target2 `$fltk/fltk-config --use-images --cxxflags` $src/test/$target2.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt
-
-g++ -Wall -pipe -pedantic -O3 $opt -o $target3 `$fltk/fltk-config --use-images --cxxflags` $src/test/$target3.cxx `$fltk/fltk-config --use-images --ldflags` -g $opt
+for i in $targets
+do
+	echo "Building" $i
+	g++ -Wall -pipe -pedantic -O3 $opt -o $i `$fltkconfig --use-images --cxxflags` $src/test/$i.cxx `$fltkconfig --use-images --ldflags` -g $opt
+done
