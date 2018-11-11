@@ -26,6 +26,7 @@
 #include <FL/Fl_RGB_Image.H>
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl.H>
+#include <FL/fl_draw.H>
 
 enum Transparency {
   T_NONE = 0xff,
@@ -161,7 +162,33 @@ static void dispose(int frame_, FrameInfo *_fi, uchar *offscreen_) {
   }
 }
 
+void Fl_Anim_GIF::init(const char*name_, bool start_, bool optimize_mem_, bool debug_) {
+  _fi->debug = debug_;
+  _fi->optimize_mem = optimize_mem_;
+  load(name_);
+  if (canvas_w() && canvas_h()) {
+    if (w() <= 0 && h() <= 0)
+      size(canvas_w(), canvas_h());
+  }
+  if (start_)
+    start();
+}
+
 Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_, int w_, int h_,
+                         const char *name_ /* = 0*/, bool start_ /* = true*/,
+                         bool optimize_mem_/* = false*/,
+                         bool debug_/* = false*/) :
+  Inherited(x_, y_, w_, h_),
+  _valid(false),
+  _uncache(false),
+  _stopped(false),
+  _frame(-1),
+  _speed(1),
+  _fi(new FrameInfo()) {
+    init(name_, start_, optimize_mem_, debug_);
+}
+
+Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_,
                          const char *name_ /* = 0*/, bool start_ /* = true*/,
                          bool optimize_mem_/* = false*/,
                          bool debug_/* = false*/) :
@@ -172,15 +199,7 @@ Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_, int w_, int h_,
   _frame(-1),
   _speed(1),
   _fi(new FrameInfo()) {
-  _fi->debug = debug_;
-  _fi->optimize_mem = optimize_mem_;
-  load(name_);
-  if (canvas_w() && canvas_h()) {
-    if (!w() && !h())
-      size(canvas_w(), canvas_h());
-  }
-  if (start_)
-    start();
+    init(name_, start_, optimize_mem_, debug_);
 }
 
 Fl_Anim_GIF::Fl_Anim_GIF() :
@@ -762,6 +781,7 @@ void Fl_Anim_GIF::draw() {
   //       Note: currently we store the name_ in the label()!
   // Inherited::draw();
   if (this->image()) {
+    fl_push_clip(x(), y(), w(), h());
     if (_fi->optimize_mem) {
       int f0 = _frame;
       while (f0 > 0 && !(_fi->frames[f0].x == 0 && _fi->frames[f0].y == 0 &&
@@ -782,9 +802,11 @@ void Fl_Anim_GIF::draw() {
     else {
       if (_fi->frames[_frame].scalable) {
         _fi->frames[_frame].scalable->draw(x(), y());
+        fl_pop_clip();
         return;
       }
       this->image()->draw(x(), y());
     }
+    fl_pop_clip();
   }
 }
