@@ -104,7 +104,7 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool clo
       animgif->resize(scale);
       sprintf(buf, "%s (%d frames) scale=%1.1f", fl_filename_name(name_), animgif->frames(), scale);
     }
-    win->tooltip(strdup(buf));
+    win->copy_tooltip(buf);
     win->copy_label(buf);
     win->size(animgif->w(), animgif->h());
     win->show();
@@ -122,7 +122,7 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool clo
       char buf[200];
       sprintf(buf, "Frame #%d", i + 1);
       Fl_Double_Window *win = new Fl_Double_Window(animgif->w(), animgif->h());
-      win->tooltip(strdup(buf));
+      win->copy_tooltip(buf);
       win->copy_label(buf);
       win->color(BACKGROUND);
       Fl_Box *b = new Fl_Box(0, 0, win->w(), win->h());
