@@ -93,6 +93,7 @@ int main(int argc_, char *argv_[]) {
     fprintf(stderr, "Usage: %s fileName [-b] [-m] [-g] [-u]\n", argv_[0]);
     exit(0);
   }
+  Fl_Anim_GIF_Image::min_delay = 0.1; // set a minumum delay for playback
 
   Fl_Double_Window win(640, 480);
 

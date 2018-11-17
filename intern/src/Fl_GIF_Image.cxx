@@ -377,6 +377,9 @@ void *Fl_GIF_Image::read_next_image() {
 #include <FL/Fl_RGB_Image.H>
 #include <FL/Fl.H>
 
+/*static*/
+double Fl_Anim_GIF_Image::min_delay = 0.;
+
 //
 //  Internal helper classes/structs
 //
@@ -672,6 +675,10 @@ bool Fl_Anim_GIF_Image::next_frame() {
     return false;
   set_frame(frame);
   double delay = _fi->frames[frame].delay;
+  if (min_delay && delay < min_delay) {
+    DEBUG(("#%d: correct delay %f => %f\n", frame, delay, min_delay));
+    delay = min_delay;
+  }
   if (is_animated() && delay > 0 && _speed > 0) {  // normal GIF has no delay
     delay /= _speed;
     Fl::add_timeout(delay, cb_animate, this);

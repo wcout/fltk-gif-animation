@@ -106,6 +106,11 @@ struct FrameInfo {
 #define DEBUG(x) if ( _fi->debug ) printf x
 //#define DEBUG(x)
 
+
+/*static*/
+double Fl_Anim_GIF::min_delay = 0.;
+
+
 static double convertDelay(FrameInfo *fi_, int d_) {
   if (d_ <= 0)
     d_ = fi_->loop_count != 1 ? 10 : 0;
@@ -332,6 +337,10 @@ bool Fl_Anim_GIF::next_frame() {
     return false;
   set_frame(frame);
   double delay = _fi->frames[_frame].delay;
+  if (min_delay && delay < min_delay) {
+    DEBUG(("#%d: correct delay %f => %f\n", frame, delay, min_delay));
+    delay = min_delay;
+  }
   if (!_stopped && delay > 0 && _speed > 0) {	// normal GIF has no delay
     delay /= _speed;
     Fl::add_timeout(delay, cb_animate, this);
@@ -777,36 +786,32 @@ void Fl_Anim_GIF::desaturate() {
 
 /*virtual*/
 void Fl_Anim_GIF::draw() {
-  // TODO: Shall we additionally support/draw the label()
-  //       Note: currently we store the name_ in the label()!
-  // Inherited::draw();
   if (this->image()) {
-    fl_push_clip(x(), y(), w(), h());
+    int X = x() + (w() - canvas_w()) / 2;
+    int Y = y() + (h() - canvas_h()) / 2;
     if (_fi->optimize_mem) {
       int f0 = _frame;
       while (f0 > 0 && !(_fi->frames[f0].x == 0 && _fi->frames[f0].y == 0 &&
-                       _fi->frames[f0].w == canvas_w() && _fi->frames[f0].h == canvas_h()))
+                         _fi->frames[f0].w == canvas_w() && _fi->frames[f0].h == canvas_h()))
         --f0;
       for (int f = f0; f <= _frame; f++) {
         if (f < _frame && _fi->frames[f].dispose == DISPOSE_PREVIOUS) continue;
         if (f < _frame && _fi->frames[f].dispose == DISPOSE_BACKGROUND) continue;
         scale_frame(f);
         if (_fi->frames[f].scalable) {
-          _fi->frames[f].scalable->draw(x() + _fi->frames[f].x, y() + _fi->frames[f].y);
+          _fi->frames[f].scalable->draw(X + _fi->frames[f].x, Y + _fi->frames[f].y);
         }
         else if (_fi->frames[f].rgb) {
-          _fi->frames[f].rgb->draw(x() + _fi->frames[f].x, y() +_fi->frames[f].y);
+          _fi->frames[f].rgb->draw(X + _fi->frames[f].x, Y +_fi->frames[f].y);
         }
       }
     }
     else {
       if (_fi->frames[_frame].scalable) {
-        _fi->frames[_frame].scalable->draw(x(), y());
-        fl_pop_clip();
+        _fi->frames[_frame].scalable->draw(X, Y);
         return;
       }
-      this->image()->draw(x(), y());
+      this->image()->draw(X, Y);
     }
-    fl_pop_clip();
   }
 }

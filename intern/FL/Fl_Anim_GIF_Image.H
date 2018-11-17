@@ -161,6 +161,13 @@ public:
    */
   bool load(const char *name_);
   /**
+   The min_delay value can be used to set a minimum value
+   for the frame delay for playback. This is to prevent
+   cpu hogs caused by images with very low delay rates.
+   This is a global value for all Fl_Anim_GIF objects.
+   */
+  static double min_delay;
+  /**
    Return the name of the played file as specified in the constructor.
    */
   const char *name() const;

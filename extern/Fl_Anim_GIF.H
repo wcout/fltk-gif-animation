@@ -125,6 +125,13 @@ public:
    */
   bool load(const char *name_);
   /**
+   The min_delay value can be used to set a minimum value
+   for the frame delay for playback. This is to prevent
+   cpu hogs caused by images with very low delay rates.
+   This is a global value for all Fl_Anim_GIF objects.
+   */
+  static double min_delay;
+  /**
    The speed() method changes the playing speed
    to speed_ x original speed. E.g. to play at half
    speed call it with 0.5, for double speed with 2.
