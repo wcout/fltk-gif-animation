@@ -1,3 +1,19 @@
+//
+// Copyright 2016-2018 Christian Grabner <wcout@gmx.net>
+//
+// Fl_Anim_GIF_Image class - FLTK animated GIF extension.
+//
+// Fl_Anim_GIF_Image is free software: you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by
+// the Free Software Foundation,  either version 3 of the License, or
+// (at your option) any later version.
+//
+// Fl_Anim_GIF_Image is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY;  without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License for more details:
+// http://www.gnu.org/licenses/.
+//
 #ifndef Fl_Anim_Gif_Image_H
 #define Fl_Anim_Gif_Image_H
 
@@ -164,7 +180,7 @@ public:
    The min_delay value can be used to set a minimum value
    for the frame delay for playback. This is to prevent
    cpu hogs caused by images with very low delay rates.
-   This is a global value for all Fl_Anim_GIF objects.
+   This is a global value for all Fl_Anim_GIF_Image objects.
    */
   static double min_delay;
   /**
