@@ -46,7 +46,7 @@ extern "C" {
 #define _GIF_SWAP(h) ((GIF_BIGE)? ((uint16_t)(h << 8) | (h >> 8)) : h)
 
 #pragma pack(push, 1)
-struct _GIF_WHDR {              /** ======== frame writer info: ======== **/
+typedef struct {                /** ======== frame writer info: ======== **/
     int xdim, ydim, clrs,       /** global dimensions, palette size      **/
         bkgd, tran,             /** background index, transparent index  **/
         intr, mode,             /** interlace flag, frame blending mode  **/
@@ -56,9 +56,8 @@ struct _GIF_WHDR {              /** ======== frame writer info: ======== **/
     struct {                    /** [==== GIF RGB palette element: ====] **/
         uint8_t R, G, B;        /** [color values - red, green, blue   ] **/
     } *cpal;                    /** current palette                      **/
-};
+} GIF_WHDR;
 #pragma pack(pop)
-typedef struct _GIF_WHDR GIF_WHDR;
 
 enum {GIF_NONE = 0, GIF_CURR = 1, GIF_BKGD = 2, GIF_PREV = 3};
 

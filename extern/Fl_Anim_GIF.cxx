@@ -123,12 +123,12 @@ public:
   bool optimize_mem;                // Flag to store frames in original dimensions
   uchar *offscreen;                 // internal "offscreen" buffer
 private:
-  static void cb_gl_frame(void *ctx_, _GIF_WHDR *whdr_);
-  static void cb_gl_extension(void *ctx_, _GIF_WHDR *whdr_);
+  static void cb_gl_frame(void *ctx_, GIF_WHDR *whdr_);
+  static void cb_gl_extension(void *ctx_, GIF_WHDR *whdr_);
 private:
   void dispose(int frame_);
-  void onFrameLoaded(_GIF_WHDR &whdr_);
-  void onExtensionLoaded(_GIF_WHDR &whdr_);
+  void onFrameLoaded(GIF_WHDR &whdr_);
+  void onExtensionLoaded(GIF_WHDR &whdr_);
   void setToBackGround(int frame_);
 };
 
@@ -184,14 +184,14 @@ double FrameInfo::convertDelay(int d_) const {
 }
 
 /*static*/
-void FrameInfo::cb_gl_frame(void *ctx_, _GIF_WHDR *whdr_) {
+void FrameInfo::cb_gl_frame(void *ctx_, GIF_WHDR *whdr_) {
   // called from GIF_Load() when image block loaded
   FrameInfo *fi = (FrameInfo *)ctx_;
   fi->onFrameLoaded(*whdr_);
 }
 
 /*static*/
-void FrameInfo::cb_gl_extension(void *ctx_, _GIF_WHDR *whdr_) {
+void FrameInfo::cb_gl_extension(void *ctx_, GIF_WHDR *whdr_) {
   // called from GIF_Load() when extension block loaded
   FrameInfo *fi = (FrameInfo *)ctx_;
   fi->onExtensionLoaded(*whdr_);
@@ -221,7 +221,7 @@ void FrameInfo::copy(const FrameInfo& fi_) {
   loop_count = fi_.loop_count; // .. and the loop_count!
 }
 
-static void deinterlace(_GIF_WHDR &whdr_) {
+static void deinterlace(GIF_WHDR &whdr_) {
   if (!whdr_.intr) return;
   // this code is from 'gif_load's example program (with adaptions)
   int iter = 0;
@@ -284,7 +284,7 @@ bool FrameInfo::load(char *buf_, long len_) {
   return valid;
 }
 
-void FrameInfo::onFrameLoaded(_GIF_WHDR &whdr_) {
+void FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
   if (whdr_.ifrm && !valid) return; // if already invalid, just ignore rest
   int delay = whdr_.time;
   if ( delay < 0 )
@@ -380,7 +380,7 @@ void FrameInfo::onFrameLoaded(_GIF_WHDR &whdr_) {
   }
 }
 
-void FrameInfo::onExtensionLoaded(_GIF_WHDR &whdr_) {
+void FrameInfo::onExtensionLoaded(GIF_WHDR &whdr_) {
   uchar *ext = whdr_.bptr;
   if (memcmp(ext, "NETSCAPE2.0", 11) == 0 && ext[11] >= 3) {
     uchar *params = &ext[12];
