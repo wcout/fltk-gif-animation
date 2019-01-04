@@ -1,5 +1,5 @@
 //
-// Copyright 2016-2017 Christian Grabner <wcout@gmx.net>
+// Copyright 2016-2019 Christian Grabner <wcout@gmx.net>
 //
 // Testprogram for the Fl_Anim_GIF widget (FLTK animated GIF widget).
 //
@@ -80,7 +80,7 @@ static int global_key_handler(int e_)
   return 1;
 }
 
-Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool close_ = false) {
+Fl_Window *openFile(const char *name_, bool optimize_mem_, int debug_, bool close_ = false) {
   Fl_Double_Window *win = new Fl_Double_Window(100, 100);
   win->color(BACKGROUND);
   if (close_)
@@ -89,14 +89,14 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool clo
   Fl_Anim_GIF *animgif = new Fl_Anim_GIF(0, 0, 0, 0, name_, /*start_=*/false, optimize_mem_, debug_);
   win->end();
   char buf[200];
-  if (animgif->frames()) {
+  if (animgif->valid() && animgif->frames()) {
     if (CopyTest) {
       // test the copy() functionality
       Fl_Anim_GIF *copied = animgif->copy(400, 400);
       delete animgif;
       animgif = copied;
       win->insert(*animgif, 0);
-      sprintf(buf, "Copy of %s (%d frames)", fl_filename_name(name_), animgif->frames());
+      sprintf(buf, "Copy of '%s' (%d frames)", fl_filename_name(name_), animgif->frames());
     }
     else {
       // test the resize() functionality
@@ -114,10 +114,11 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, bool debug_, bool clo
     animgif->start();
   }
   else {
+    printf("Invalid GIF file '%s'\n", fl_filename_name(name_));
     delete win;
     return 0;
   }
-  if (debug_) {
+  if (debug_ >= 3) {
     for (int i = 0; i < animgif->frames(); i++) {
       char buf[200];
       sprintf(buf, "Frame #%d", i + 1);
@@ -172,10 +173,13 @@ int main(int argc_, char *argv_[]) {
       openTestSuite(argc_ > 2 ? argv_[2] : "testsuite");
     }
     else {
-      bool debug = false;
+      int debug = 0;
       for (int i = 1; i < argc_; i++) {
-        if (!strcmp(argv_[i], "-d"))
-          debug = true;
+        if (!strncmp(argv_[i], "-d", 2)) {
+          int j = 1;
+          while (argv_[i][j++] == 'd')
+            debug++;
+        }
         if (!strcmp(argv_[i], "-c"))
           CopyTest = true;
         if (!strcmp(argv_[i], "-x"))

@@ -1,5 +1,5 @@
 //
-// Copyright 2016-2018 Christian Grabner <wcout@gmx.net>
+// Copyright 2016-2019 Christian Grabner <wcout@gmx.net>
 //
 // Fl_Anim_GIF widget - FLTK animated GIF widget.
 //
@@ -20,6 +20,7 @@
 class Fl_Image;
 class RGB_Image;
 struct FrameInfo;
+struct _GIF_WHDR;
 
 #include <FL/Fl_Box.H>
 
@@ -49,9 +50,9 @@ public:
    default.
    */
   Fl_Anim_GIF(int x_, int y_, int w_, int h_, const char *name_ = 0,
-              bool start_ = true, bool optimize_mem_ = false, bool debug_ = false);
+              bool start_ = true, bool optimize_mem_ = false, int debug_ = 0);
   Fl_Anim_GIF(int x_, int y_, const char *name_ = 0,
-              bool start_ = true, bool optimize_mem_ = false, bool debug_ = false);
+              bool start_ = true, bool optimize_mem_ = false, int debug_ = 0);
   /**
    The destructor stops a running animation and releases all
    resources.
@@ -132,6 +133,20 @@ public:
    */
   static double min_delay;
   /**
+   The loop flag can be used to (dis-)allow loop count.
+   If set (which is the default), the animation will be
+   stopped after the number of repeats specified in the
+   GIF file (typically this count is set to 'forever' anyway).
+   If cleared the animation will always be 'forever',
+   regardless of what is specified in the GIF file.
+   */
+  static bool loop;
+  /**
+   The speed() method changes the playing speed
+   to speed_ x original speed. E.g. to play at half
+   speed call it with 0.5, for double speed with 2.
+   */
+  /**
    The speed() method changes the playing speed
    to speed_ x original speed. E.g. to play at half
    speed call it with 0.5, for double speed with 2.
@@ -183,18 +198,22 @@ public:
    The debug() method returns if the class has
    set the debug option in it's constructor.
    */
-  bool debug() const;
+  int debug() const;
 protected:
   bool next_frame();
   void clear_frames();
   void set_frame(int frame_);
 private:
   static void cb_animate(void *d_);
+  static void cb_gl_frame(void *ctx_, _GIF_WHDR *whdr_);
+  static void cb_gl_extension(void *ctx_, _GIF_WHDR *whdr_);
   void scale_frame(int frame_ = -1);
 private:
   Fl_Anim_GIF();
   virtual void draw();
-  void init(const char*name_, bool start_, bool optimize_mem_, bool debug_);
+  void onFrameLoaded(_GIF_WHDR &whdr_);
+  void onExtensionLoaded(_GIF_WHDR &whdr_);
+  void init(const char*name_, bool start_, bool optimize_mem_, int debug_);
   bool _valid;
   bool _uncache;
   bool _stopped;
