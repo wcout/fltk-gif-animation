@@ -28,9 +28,12 @@
 #include <FL/Fl_RGB_Image.H>
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl.H>
-#include <FL/fl_draw.H>
 
 #include "gif_load.h"
+
+//
+//  Helper classes/definitions
+//
 
 enum Transparency {
   T_NONE = 0xff,
@@ -132,35 +135,21 @@ private:
   void setToBackGround(int frame_);
 };
 
-#include <FL/Fl_Box.H>
-#include <FL/Fl_Group.H>	// for parent()
-#include <FL/Fl.H>			// for Fl::add_timeout()
-
 #define DEBUG(x) if (debug()) printf x
 #define LOG(x) if (debug() >= 2) printf x
 #ifndef DEBUG
-	#define DEBUG(x)
+  #define DEBUG(x)
 #endif
 #ifndef LOG
-	#define LOG(x)
+  #define LOG(x)
 #endif
-
-//
-// Fl_Anim_GIF global variables
-//
-
-/*static*/
-double Fl_Anim_GIF::min_delay = 0.;
-/*static*/
-bool Fl_Anim_GIF::loop = true;
-
 
 //
 // class FrameInfo implemention
 //
 
 FrameInfo::~FrameInfo() {
-	clear();
+  clear();
 }
 
 void FrameInfo::clear() {
@@ -307,7 +296,7 @@ void FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
   }
 
   if (!whdr_.clrs) {
-	 // Note: unfortunately we do not have a filename here..
+    // Note: unfortunately we do not have a filename here..
     Fl::warning("GIF does not have a colormap\n");
     valid = false;
     return;
@@ -400,7 +389,6 @@ bool FrameInfo::push_back_frame(const GifFrame &frame_) {
   return true;
 }
 
-
 void FrameInfo::resize(int W_, int H_) {
   double scale_factor_x = (double)W_ / (double)canvas_w;
   double scale_factor_y = (double)H_ / (double)canvas_h;
@@ -482,11 +470,25 @@ void FrameInfo::set_frame(int frame_) {
 
 
 //
+// Fl_Anim_GIF global variables
+//
+
+/*static*/
+double Fl_Anim_GIF::min_delay = 0.;
+/*static*/
+bool Fl_Anim_GIF::loop = true;
+
+//
 // class Fl_Anim_GIF implementation
 //
 
+#include <FL/Fl_Box.H>
+#include <FL/Fl_Group.H>	// for parent()
+#include <FL/Fl.H>			// for Fl::add_timeout()
+#include <FL/fl_draw.H>
+
 void Fl_Anim_GIF::_init(const char*name_, bool start_,
-                       bool optimize_mem_, int debug_) {
+                        bool optimize_mem_, int debug_) {
   _fi->_debug = debug_;
   _fi->optimize_mem = optimize_mem_;
   _valid = load(name_);
@@ -544,7 +546,7 @@ Fl_Anim_GIF::~Fl_Anim_GIF() {
 }
 
 void Fl_Anim_GIF::clear_frames() {
-	_fi->clear();
+  _fi->clear();
 }
 
 int Fl_Anim_GIF::canvas_w() const {
