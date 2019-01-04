@@ -199,7 +199,7 @@ bool Fl_GIF_Image::load(const char *infname) {
   GifFileType *gifFileIn;
   int errorCode;
   if (!infname || (gifFileIn = DGifOpenFileName(infname, &errorCode)) == NULL) {
-    Fl::error("Fl_GIF_Image: Unable to open %s!", infname);
+    Fl::error("Fl_GIF_Image: Unable to open %s!\n", infname);
     ld(ERR_FILE_ACCESS);
     return false;
   }
@@ -240,9 +240,10 @@ bool Fl_GIF_Image::load(const char *infname) {
       Blue[i] = ColorMap->Colors[i].Blue;
     }
   } else {
-    Fl::warning("%s does not have a colormap.", infname);
-    for (int i = 0; i < ColorMapSize; i++)
-      Red[i] = Green[i] = Blue[i] = (uchar)(255 * i / (ColorMapSize-1));
+    Fl::error("%s does not have a colormap.\n", infname);
+    DGifCloseFile(gifFileIn, &errorCode);
+    ld(ERR_FORMAT);
+    return false;
   }
   GraphicsControlBlock gcb = {};
   gcb.TransparentColor = NO_TRANSPARENT_COLOR;
@@ -571,7 +572,7 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image() :
 Fl_Anim_GIF_Image::~Fl_Anim_GIF_Image() {
   Fl::remove_timeout(cb_animate, this);
   clear_frames();
-  delete _fi->offscreen;
+  free(_fi->offscreen);
   delete _fi;
   free(_name);
 }
@@ -675,7 +676,7 @@ bool Fl_Anim_GIF_Image::next_frame() {
     return false;
   set_frame(frame);
   double delay = _fi->frames[frame].delay;
-  if (min_delay && delay < min_delay) {
+  if (_fi->loop_count !=1 && min_delay && delay < min_delay) {
     DEBUG(("#%d: correct delay %f => %f\n", frame, delay, min_delay));
     delay = min_delay;
   }
@@ -1016,6 +1017,7 @@ Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
   copied->_fi->canvas_h = H_;
   copied->_fi->optimize_mem = _fi->optimize_mem;
   copied->_fi->scaling = Fl_Image::RGB_scaling(); // save current scaling mode
+  copied->_fi->loop_count = _fi->loop_count; // .. and the loop count!
   copied->_uncache = _uncache; // copy 'inherits' frame uncache status
   copied->_valid = _valid && copied->_fi->frames_size == _fi->frames_size;
   scale_frame(); // scale current frame now

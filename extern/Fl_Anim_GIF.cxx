@@ -220,6 +220,7 @@ Fl_Anim_GIF::Fl_Anim_GIF() :
 Fl_Anim_GIF::~Fl_Anim_GIF() {
   Fl::remove_timeout(cb_animate, this);
   clear_frames();
+  free(_fi->offscreen);
   delete _fi;
 }
 
@@ -337,7 +338,7 @@ bool Fl_Anim_GIF::next_frame() {
     return false;
   set_frame(frame);
   double delay = _fi->frames[_frame].delay;
-  if (min_delay && delay < min_delay) {
+  if (_fi->loop_count != 1 && min_delay && delay < min_delay) {
     DEBUG(("#%d: correct delay %f => %f\n", frame, delay, min_delay));
     delay = min_delay;
   }
@@ -480,6 +481,7 @@ bool Fl_Anim_GIF::load(const char *name_) {
   _fi->canvas_w = gifFileIn->SWidth;
   _fi->canvas_h = gifFileIn->SHeight;
   _frame = -1;
+  free(_fi->offscreen);
   _fi->offscreen = (uchar *)calloc(_fi->canvas_w * _fi->canvas_h * 4, 1);
   _fi->background_color_index = gifFileIn->SColorMap ? gifFileIn->SBackGroundColor : -1;
   if (_fi->background_color_index >= 0) {
@@ -599,7 +601,6 @@ bool Fl_Anim_GIF::load(const char *name_) {
   }
   DGifCloseFile(gifFileIn, &errorCode);
   _valid = true;
-  memset(_fi->offscreen, 0, canvas_w() * canvas_h() * 4);
   return _valid;
 }         // load
 
@@ -734,6 +735,7 @@ Fl_Anim_GIF * Fl_Anim_GIF::copy(int W_, int H_) {
   copied->_fi->canvas_h = H_;
   copied->_fi->optimize_mem = _fi->optimize_mem;
   copied->_fi->scaling = Fl_Image::RGB_scaling(); // save current scaling mode
+  copied->_fi->loop_count = _fi->loop_count; // .. and the loop count!
   copied->_uncache = _uncache; // copy 'inherits' frame uncache status
   copied->copy_label(label());
   copied->_valid = _valid && copied->_fi->frames_size == _fi->frames_size;

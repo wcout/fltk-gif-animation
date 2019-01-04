@@ -153,7 +153,7 @@ int main(int argc_, char *argv_[]) {
   if (optimize) {
     printf("Using memory optimization (if image supports)\n");
   }
-  orig = new Fl_Anim_GIF(canvas.x(), canvas.y(), canvas.w(), canvas.h(),
+  orig = new Fl_Anim_GIF(canvas.x(), canvas.y(), 0, 0,
                          /*name_=*/ fileName, /*start_=*/true, optimize);
   canvas.insert(*orig, 0);
 
