@@ -249,7 +249,7 @@ int main(int argc_, char *argv_[]) {
       //       In a real-life application you will probably store
       //       it somewhere in the window's or canvas' object and destroy
       //       the image in the window's or canvas' destructor.
-      if (win->user_data())
+      if (win && win->user_data())
         delete ((Fl_Anim_GIF_Image *)win->user_data());
       delete win;
     }
