@@ -80,6 +80,11 @@ public:
    */
   virtual Fl_Anim_GIF *copy(int W_, int H_);
   /**
+   The debug() method returns if the class has
+   set the debug option in it's constructor.
+   */
+  int debug() const;
+  /**
    The desaturate() method applies desaturate() to all frames
    of the animation.
    */
@@ -92,6 +97,20 @@ public:
    Set the delay of frame 'frame_' `[0-frames() -1]` in seconds
    */
   void delay(int frame_, double delay_);
+  /**
+   Return the frame position of frame 'frame_'
+   Usefull only if loaded with 'optimize_mem' and
+   the animation also has size optimized frames.
+   */
+  int frame_x(int frame_) const;
+  int frame_y(int frame_) const;
+  /**
+   Return the frame dimensions of frame 'frame_'.
+   Usefull only if loaded with 'optimize_mem' and
+   the animation also has size optimized frames.
+   */
+  int frame_w(int frame_) const;
+  int frame_h(int frame_) const;
   /**
    Return the number of frames.
    */
@@ -126,13 +145,6 @@ public:
    */
   bool load(const char *name_);
   /**
-   The min_delay value can be used to set a minimum value
-   for the frame delay for playback. This is to prevent
-   cpu hogs caused by images with very low delay rates.
-   This is a global value for all Fl_Anim_GIF objects.
-   */
-  static double min_delay;
-  /**
    The loop flag can be used to (dis-)allow loop count.
    If set (which is the default), the animation will be
    stopped after the number of repeats specified in the
@@ -141,6 +153,13 @@ public:
    regardless of what is specified in the GIF file.
    */
   static bool loop;
+  /**
+   The min_delay value can be used to set a minimum value
+   for the frame delay for playback. This is to prevent
+   cpu hogs caused by images with very low delay rates.
+   This is a global value for all Fl_Anim_GIF objects.
+   */
+  static double min_delay;
   /**
    The speed() method changes the playing speed
    to speed_ x original speed. E.g. to play at half
@@ -180,25 +199,6 @@ public:
    one frame.
    */
   bool valid() const;
-  /**
-   Return the frame position of frame 'frame_'
-   Usefull only if loaded with 'optimize_mem' and
-   the animation also has size optimized frames.
-   */
-  int frame_x(int frame_) const;
-  int frame_y(int frame_) const;
-  /**
-   Return the frame dimensions of frame 'frame_'.
-   Usefull only if loaded with 'optimize_mem' and
-   the animation also has size optimized frames.
-   */
-  int frame_w(int frame_) const;
-  int frame_h(int frame_) const;
-  /**
-   The debug() method returns if the class has
-   set the debug option in it's constructor.
-   */
-  int debug() const;
 protected:
   bool next_frame();
   void clear_frames();
@@ -213,7 +213,7 @@ private:
   virtual void draw();
   void onFrameLoaded(_GIF_WHDR &whdr_);
   void onExtensionLoaded(_GIF_WHDR &whdr_);
-  void init(const char*name_, bool start_, bool optimize_mem_, int debug_);
+  void _init(const char*name_, bool start_, bool optimize_mem_, int debug_);
   bool _valid;
   bool _uncache;
   bool _stopped;

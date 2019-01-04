@@ -114,7 +114,7 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, int debug_, bool clos
     animgif->start();
   }
   else {
-    printf("Invalid GIF file '%s'\n", fl_filename_name(name_));
+    printf("Invalid GIF file '%s', %d frames\n", fl_filename_name(name_), animgif->frames());
     delete win;
     return 0;
   }
