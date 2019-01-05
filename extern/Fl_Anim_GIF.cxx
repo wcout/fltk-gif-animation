@@ -22,9 +22,9 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cmath> // lround()
+#include <cmath>   // lround()
 #include <cstring> // strerror
-#include <cerrno> // errno
+#include <cerrno>  // errno
 #include <FL/Fl_RGB_Image.H>
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl.H>
@@ -146,7 +146,7 @@ private:
 #endif
 
 //
-// class FrameInfo implemention
+// class FrameInfo implementation
 //
 
 Fl_Anim_GIF::FrameInfo::~FrameInfo() {
@@ -492,6 +492,7 @@ void Fl_Anim_GIF::FrameInfo::set_frame(int frame_) {
 double Fl_Anim_GIF::min_delay = 0.;
 /*static*/
 bool Fl_Anim_GIF::loop = true;
+
 
 //
 // class Fl_Anim_GIF implementation
