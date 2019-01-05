@@ -19,8 +19,8 @@
 
 class Fl_Image;
 class RGB_Image;
-struct FrameInfo;
-struct _GIF_WHDR;
+class FrameInfo;
+struct GIF_WHDR;
 
 #include <FL/Fl_Box.H>
 
@@ -205,14 +205,14 @@ protected:
   void set_frame(int frame_);
 private:
   static void cb_animate(void *d_);
-  static void cb_gl_frame(void *ctx_, _GIF_WHDR *whdr_);
-  static void cb_gl_extension(void *ctx_, _GIF_WHDR *whdr_);
+  static void cb_gl_frame(void *ctx_, GIF_WHDR *whdr_);
+  static void cb_gl_extension(void *ctx_, GIF_WHDR *whdr_);
   void scale_frame(int frame_ = -1);
 private:
   Fl_Anim_GIF();
   virtual void draw();
-  void onFrameLoaded(_GIF_WHDR &whdr_);
-  void onExtensionLoaded(_GIF_WHDR &whdr_);
+  void onFrameLoaded(GIF_WHDR &whdr_);
+  void onExtensionLoaded(GIF_WHDR &whdr_);
   void _init(const char*name_, bool start_, bool optimize_mem_, int debug_);
   bool _valid;
   bool _uncache;

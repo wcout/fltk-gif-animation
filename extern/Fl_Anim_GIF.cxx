@@ -80,7 +80,7 @@ struct GifFrame {
 };
 
 class FrameInfo {
-public:
+friend class Fl_Anim_GIF;
   FrameInfo() :
     valid(false),
     frames_size(0),
@@ -107,7 +107,7 @@ public:
   void resize(int W_, int H_);
   void scale_frame(int frame_);
   void set_frame(int frame_);
-public:
+private:
   bool valid;
   int frames_size;                  // number of frames stored in 'frames'
   GifFrame *frames;                 // "vector" for frames
@@ -365,7 +365,6 @@ void FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
 
   if (!push_back_frame(frame)) {
     valid = false;
-    return;
   }
 }
 
@@ -695,26 +694,34 @@ Fl_Image *Fl_Anim_GIF::image(int frame_) const {
   return 0;
 }
 
+static char *readin(const char *name_, long &sz_) {
+  FILE *gif = fopen(name_, "r");
+  sz_ = 0;
+  char *buf = 0;
+  if (!(gif && fseek(gif, 0, SEEK_END) >= 0 &&
+       (sz_ = ftell( gif )) >= 0            &&
+       (buf = (char *)malloc( (size_t)sz_)) &&
+       fseek(gif, 0, SEEK_SET) >= 0         &&
+       fread(buf, 1, (size_t)sz_, gif) == (size_t)sz_)) {
+    free(buf);
+    buf = 0;
+  }
+  if (gif) fclose(gif);
+  return buf;
+}
+
 bool Fl_Anim_GIF::load(const char *name_) {
   DEBUG(("Fl_Anim_GIF:::load '%s'\n", name_));
   clear_frames();
   copy_label(name_); // TODO: store name as label() or use own field for it?
 
   // read gif file into memory
-  FILE *gif = fopen(name_, "r");
   long len = 0;
-  char *buf = 0;
-  if ( !(gif && fseek(gif, 0, SEEK_END) >= 0 &&
-        (len = ftell( gif )) >= 0            &&
-        (buf = (char *)malloc( (size_t)len)) &&
-        fseek(gif, 0, SEEK_SET) >= 0         &&
-        fread(buf, 1, (size_t)len, gif) == (size_t)len)) {
+  char *buf = readin(name_, len);
+  if (!buf) {
     Fl::error("Fl_Anim_GIF: Unable to open '%s': %s\n", name_, strerror(errno));
-    free(buf);
-    if (gif) fclose(gif);
     return false;
   }
-  fclose(gif);
 
   // decode GIF using gif_load.h
   _fi->load(buf, len);

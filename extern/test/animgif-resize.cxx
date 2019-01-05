@@ -22,7 +22,7 @@ static void dump_shared_images()
   {
     printf("%02u [%d] '%s' %d x %d\n", i+1, images[i]->refcount(),
            images[i]->name(), images[i]->w(), images[i]->h());
-	}
+  }
 }
 
 class Canvas : public Fl_Group {
@@ -30,10 +30,10 @@ class Canvas : public Fl_Group {
 public:
   Canvas(int x_, int y_, int w_, int h_) :
     Inherited(x_, y_, w_, h_)
-	{
-		if (!draw_grid)
-			box(FL_FLAT_BOX);
-	}
+  {
+    if (!draw_grid)
+      box(FL_FLAT_BOX);
+  }
   virtual void draw() {
     if (draw_grid) {
       // draw a transparency grid as background
@@ -68,7 +68,7 @@ public:
       animgif->start();
       printf("resized to %d x %d\n", animgif->w(), animgif->h());
 #else
-		// reload from original
+      // reload from original
       animgif->stop();
       remove(0);
       // delete already copied images

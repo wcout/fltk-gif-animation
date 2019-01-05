@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # put the path to your FLTK repository here
-#fltk=../fltk-1.4/
+fltk=../fltk/
 
 targets="animgif animgif-resize animgif-simple"
 

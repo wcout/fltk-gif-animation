@@ -18,7 +18,7 @@
 
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_File_Chooser.H>
-#include <FL/Fl_Shared_Image.H>
+#include <FL/Fl.H>
 
 //#define BACKGROUND FL_RED	// use this to see transparent parts better
 #define BACKGROUND FL_GRAY
@@ -80,7 +80,7 @@ static int global_key_handler(int e_)
   return 1;
 }
 
-Fl_Window *openFile(const char *name_, bool optimize_mem_, int debug_, bool close_ = false) {
+static Fl_Window *openFile(const char *name_, bool optimize_mem_, int debug_, bool close_ = false) {
   Fl_Double_Window *win = new Fl_Double_Window(100, 100);
   win->color(BACKGROUND);
   if (close_)
@@ -128,8 +128,8 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, int debug_, bool clos
       win->color(BACKGROUND);
       Fl_Box *b = new Fl_Box(0, 0, win->w(), win->h());
       b->image(animgif->image(i));
-		b->size(b->image()->w(), b->image()->h());
-		win->size(b->image()->w(), b->image()->h());
+      b->size(b->image()->w(), b->image()->h());
+      win->size(b->image()->w(), b->image()->h());
       win->end();
       win->show();
     }
@@ -138,7 +138,7 @@ Fl_Window *openFile(const char *name_, bool optimize_mem_, int debug_, bool clos
 }
 
 #include <FL/filename.H>
-bool openTestSuite(const char *dir_) {
+static bool openTestSuite(const char *dir_) {
   dirent **list;
   int nbr_of_files = fl_filename_list(dir_, &list, fl_alphasort);
   if (nbr_of_files <= 0)
