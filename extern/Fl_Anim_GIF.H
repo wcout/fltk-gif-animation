@@ -19,7 +19,6 @@
 
 class Fl_Image;
 class RGB_Image;
-class FrameInfo;
 struct GIF_WHDR;
 
 #include <FL/Fl_Box.H>
@@ -33,6 +32,9 @@ struct GIF_WHDR;
  */
 class Fl_Anim_GIF : public Fl_Box {
   typedef Fl_Box Inherited;
+
+  class FrameInfo;
+
 public:
   /**
    The constructor creates an new animated gif object from
