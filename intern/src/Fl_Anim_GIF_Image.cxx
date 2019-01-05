@@ -1,43 +1,42 @@
 //
 // Copyright 2016-2019 Christian Grabner <wcout@gmx.net>
 //
-// Fl_Anim_GIF widget - FLTK animated GIF widget.
+// Fl_Anim_GIF_Image class - FLTK animated GIF extension.
 //
-// Fl_Anim_GIF is free software: you can redistribute it and/or modify it
+// Fl_Anim_GIF_Image is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by
 // the Free Software Foundation,  either version 3 of the License, or
 // (at your option) any later version.
 //
-// Fl_Anim_GIF is distributed in the hope that it will be useful, but
+// Fl_Anim_GIF_Image is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY;  without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 // See the GNU General Public License for more details:
 // http://www.gnu.org/licenses/.
 //
-#ifdef FL_LIBRARY
-#include <FL/Fl_Anim_GIF.H>
-#else
-#include "Fl_Anim_GIF.H"
-#endif
 
-#include <cstdio>
-#include <cstdlib>
-#include <cmath>   // lround()
-#include <cstring> // strerror
-#include <cerrno>  // errno
-#include <FL/Fl_RGB_Image.H>
-#include <FL/Fl_Shared_Image.H>
 #include <FL/Fl.H>
-#include <FL/fl_utf8.h>
+#include <FL/Fl_GIF_Image.H>
+#include <FL/Fl_Shared_Image.H>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <math.h> // lround()
 
 #include "gif_load.h"
 
-//
-//  Helper classes/definitions
-//
+#include <FL/Fl_Anim_GIF_Image.H>
 
-class Fl_Anim_GIF::FrameInfo {
-friend class Fl_Anim_GIF;
+/*static*/
+bool Fl_GIF_Image::animate = false;
+
+
+///////////////////////////////////////////////////////////////////////
+//  Internal helper classes/structs
+///////////////////////////////////////////////////////////////////////
+
+class Fl_Anim_GIF_Image::FrameInfo {
+  friend class Fl_Anim_GIF_Image;
 
   enum Transparency {
     T_NONE = 0xff,
@@ -104,6 +103,7 @@ friend class Fl_Anim_GIF;
   void copy(const FrameInfo& fi_);
   double convertDelay(int d_) const;
   int debug() const { return _debug; }
+  int frame_count(char *buf_, long len_);
   bool load(char *buf_, long len_);
   bool push_back_frame(const GifFrame &frame_);
   void resize(int W_, int H_);
@@ -137,6 +137,7 @@ private:
   void setToBackGround(int frame_);
 };
 
+
 #define DEBUG(x) if (debug()) printf x
 #define LOG(x) if (debug() >= 2) printf x
 #ifndef DEBUG
@@ -146,16 +147,17 @@ private:
   #define LOG(x)
 #endif
 
+
 //
-// class FrameInfo implementation
+// helper class FrameInfo implementation
 //
 
-Fl_Anim_GIF::FrameInfo::~FrameInfo() {
+Fl_Anim_GIF_Image::FrameInfo::~FrameInfo() {
   clear();
 }
 
 
-void Fl_Anim_GIF::FrameInfo::clear() {
+void Fl_Anim_GIF_Image::FrameInfo::clear() {
   // release all allocated memory
   while (frames_size-- > 0) {
     if (frames[frames_size].scalable)
@@ -170,7 +172,7 @@ void Fl_Anim_GIF::FrameInfo::clear() {
 }
 
 
-double Fl_Anim_GIF::FrameInfo::convertDelay(int d_) const {
+double Fl_Anim_GIF_Image::FrameInfo::convertDelay(int d_) const {
   if (d_ <= 0)
     d_ = loop_count != 1 ? 10 : 0;
   return (double)d_ / 100;
@@ -178,7 +180,7 @@ double Fl_Anim_GIF::FrameInfo::convertDelay(int d_) const {
 
 
 /*static*/
-void Fl_Anim_GIF::FrameInfo::cb_gl_frame(void *ctx_, GIF_WHDR *whdr_) {
+void Fl_Anim_GIF_Image::FrameInfo::cb_gl_frame(void *ctx_, GIF_WHDR *whdr_) {
   // called from GIF_Load() when image block loaded
   FrameInfo *fi = (FrameInfo *)ctx_;
   fi->onFrameLoaded(*whdr_);
@@ -186,14 +188,14 @@ void Fl_Anim_GIF::FrameInfo::cb_gl_frame(void *ctx_, GIF_WHDR *whdr_) {
 
 
 /*static*/
-void Fl_Anim_GIF::FrameInfo::cb_gl_extension(void *ctx_, GIF_WHDR *whdr_) {
+void Fl_Anim_GIF_Image::FrameInfo::cb_gl_extension(void *ctx_, GIF_WHDR *whdr_) {
   // called from GIF_Load() when extension block loaded
   FrameInfo *fi = (FrameInfo *)ctx_;
   fi->onExtensionLoaded(*whdr_);
 }
 
 
-void Fl_Anim_GIF::FrameInfo::copy(const FrameInfo& fi_) {
+void Fl_Anim_GIF_Image::FrameInfo::copy(const FrameInfo& fi_) {
   // copy from source
   for (int i = 0; i < fi_.frames_size; i++) {
     if (!push_back_frame(fi_.frames[i])) {
@@ -238,18 +240,18 @@ static void deinterlace(GIF_WHDR &whdr_) {
 }
 
 
-void Fl_Anim_GIF::FrameInfo::dispose(int frame_) {
+void Fl_Anim_GIF_Image::FrameInfo::dispose(int frame_) {
   if (frame_ < 0) {
     return;
   }
   // dispose frame with index 'frame_' to offscreen buffer
   switch (frames[frame_].dispose) {
-    case FrameInfo::DISPOSE_PREVIOUS: {
+    case DISPOSE_PREVIOUS: {
         // dispose to previous restores to first not DISPOSE_TO_PREVIOUS frame
         int prev(frame_);
-        while (prev > 0 && frames[prev].dispose == FrameInfo::DISPOSE_PREVIOUS)
+        while (prev > 0 && frames[prev].dispose == DISPOSE_PREVIOUS)
           prev--;
-        if (prev == 0 && frames[prev].dispose == FrameInfo::DISPOSE_PREVIOUS) {
+        if (prev == 0 && frames[prev].dispose == DISPOSE_PREVIOUS) {
           setToBackGround(-1);
           return;
         }
@@ -260,7 +262,7 @@ void Fl_Anim_GIF::FrameInfo::dispose(int frame_) {
         memcpy((char *)dst, (char *)src, canvas_w * canvas_h * 4);
         break;
       }
-    case FrameInfo::DISPOSE_BACKGROUND:
+    case DISPOSE_BACKGROUND:
       DEBUG(("  dispose frame %d to background\n", frame_ + 1));
       setToBackGround(frame_);
       break;
@@ -273,7 +275,13 @@ void Fl_Anim_GIF::FrameInfo::dispose(int frame_) {
 }
 
 
-bool Fl_Anim_GIF::FrameInfo::load(char *buf_, long len_) {
+int Fl_Anim_GIF_Image::FrameInfo::frame_count(char *buf_, long len_) {
+  valid = false;
+  return GIF_Load(buf_, len_, 0, 0, this, 0);
+}
+
+
+bool Fl_Anim_GIF_Image::FrameInfo::load(char *buf_, long len_) {
   // decode GIF using gif_load.h
   valid = false;
   GIF_Load(buf_, len_, cb_gl_frame, cb_gl_extension, this, 0);
@@ -284,7 +292,7 @@ bool Fl_Anim_GIF::FrameInfo::load(char *buf_, long len_) {
 }
 
 
-void Fl_Anim_GIF::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
+void Fl_Anim_GIF_Image::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
   if (whdr_.ifrm && !valid) return; // if already invalid, just ignore rest
   int delay = whdr_.time;
   if ( delay < 0 )
@@ -380,7 +388,7 @@ void Fl_Anim_GIF::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
 }
 
 
-void Fl_Anim_GIF::FrameInfo::onExtensionLoaded(GIF_WHDR &whdr_) {
+void Fl_Anim_GIF_Image::FrameInfo::onExtensionLoaded(GIF_WHDR &whdr_) {
   uchar *ext = whdr_.bptr;
   if (memcmp(ext, "NETSCAPE2.0", 11) == 0 && ext[11] >= 3) {
     uchar *params = &ext[12];
@@ -390,7 +398,7 @@ void Fl_Anim_GIF::FrameInfo::onExtensionLoaded(GIF_WHDR &whdr_) {
 }
 
 
-bool Fl_Anim_GIF::FrameInfo::push_back_frame(const GifFrame &frame_) {
+bool Fl_Anim_GIF_Image::FrameInfo::push_back_frame(const GifFrame &frame_) {
   void *tmp = realloc(frames, sizeof(GifFrame) * (frames_size + 1));
   if (!tmp) {
     return false;
@@ -402,7 +410,7 @@ bool Fl_Anim_GIF::FrameInfo::push_back_frame(const GifFrame &frame_) {
 }
 
 
-void Fl_Anim_GIF::FrameInfo::resize(int W_, int H_) {
+void Fl_Anim_GIF_Image::FrameInfo::resize(int W_, int H_) {
   double scale_factor_x = (double)W_ / (double)canvas_w;
   double scale_factor_y = (double)H_ / (double)canvas_h;
   for (int i=0; i < frames_size; i++) {
@@ -420,7 +428,7 @@ void Fl_Anim_GIF::FrameInfo::resize(int W_, int H_) {
 }
 
 
-void Fl_Anim_GIF::FrameInfo::scale_frame(int frame_) {
+void Fl_Anim_GIF_Image::FrameInfo::scale_frame(int frame_) {
   // Do the actual scaling after a resize if neccessary
   int new_w = optimize_mem ? frames[frame_].w : canvas_w;
   int new_h = optimize_mem ? frames[frame_].h : canvas_h;
@@ -447,7 +455,7 @@ void Fl_Anim_GIF::FrameInfo::scale_frame(int frame_) {
 }
 
 
-void Fl_Anim_GIF::FrameInfo::setToBackGround(int frame_) {
+void Fl_Anim_GIF_Image::FrameInfo::setToBackGround(int frame_) {
   // reset offscreen to background color
   int bg = background_color_index;
   int tp = frame_ >= 0 ? frames[frame_].transparent_color_index : bg;
@@ -464,7 +472,7 @@ void Fl_Anim_GIF::FrameInfo::setToBackGround(int frame_) {
 }
 
 
-void Fl_Anim_GIF::FrameInfo::set_frame(int frame_) {
+void Fl_Anim_GIF_Image::FrameInfo::set_frame(int frame_) {
   // scaling pending?
   scale_frame(frame_);
 
@@ -485,259 +493,29 @@ void Fl_Anim_GIF::FrameInfo::set_frame(int frame_) {
 }
 
 
+
+///////////////////////////////////////////////////////////////////////
 //
-// Fl_Anim_GIF global variables
+// Fl_Anim_GIF_Image
+//
+// An extension to Fl_GIF_Image.
+//
+///////////////////////////////////////////////////////////////////////
+
+
+//
+// Fl_Anim_GIF_Image global variables
 //
 
 /*static*/
-double Fl_Anim_GIF::min_delay = 0.;
+double Fl_Anim_GIF_Image::min_delay = 0.;
 /*static*/
-bool Fl_Anim_GIF::loop = true;
-
+bool Fl_Anim_GIF_Image::loop = true;
 
 //
-// class Fl_Anim_GIF implementation
+//  helper functions
 //
-
-#include <FL/Fl_Box.H>
-#include <FL/Fl_Group.H>  // for parent()
-#include <FL/Fl.H>        // for Fl::add_timeout()
-#include <FL/fl_draw.H>
-
-
-void Fl_Anim_GIF::_init(const char*name_, bool start_,
-                        bool optimize_mem_, int debug_) {
-  _fi->_debug = debug_;
-  _fi->optimize_mem = optimize_mem_;
-  _valid = load(name_);
-  if (canvas_w() && canvas_h()) {
-    if (w() <= 0 && h() <= 0)
-      size(canvas_w(), canvas_h());
-  }
-  if (_valid && start_)
-    start();
-}
-
-
-Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_, int w_, int h_,
-                         const char *name_ /* = 0*/,
-                         bool start_ /* = true*/,
-                         bool optimize_mem_/* = false*/,
-                         int debug_/* = 0*/) :
-  Inherited(x_, y_, w_, h_),
-  _valid(false),
-  _uncache(false),
-  _stopped(false),
-  _frame(-1),
-  _speed(1),
-  _fi(new FrameInfo()) {
-    _init(name_, start_, optimize_mem_, debug_);
-}
-
-
-Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_,
-                         const char *name_ /* = 0*/,
-                         bool start_ /* = true*/,
-                         bool optimize_mem_/* = false*/,
-                         int debug_/* = 0*/) :
-  Inherited(x_, y_, 0, 0),
-  _valid(false),
-  _uncache(false),
-  _stopped(false),
-  _frame(-1),
-  _speed(1),
-  _fi(new FrameInfo()) {
-    _init(name_, start_, optimize_mem_, debug_);
-}
-
-
-Fl_Anim_GIF::Fl_Anim_GIF() :
-  Inherited(0, 0, 0, 0),
-  _valid(false),
-  _uncache(false),
-  _stopped(false),
-  _frame(-1),
-  _speed(1),
-  _fi(new FrameInfo()) {
-}
-
-
-Fl_Anim_GIF::~Fl_Anim_GIF() {
-  Fl::remove_timeout(cb_animate, this);
-  delete _fi;
-}
-
-
-void Fl_Anim_GIF::clear_frames() {
-  _fi->clear();
-}
-
-
-int Fl_Anim_GIF::canvas_w() const {
-  return _fi->canvas_w;
-}
-
-
-int Fl_Anim_GIF::canvas_h() const {
-  return _fi->canvas_h;
-}
-
-
-/*static*/
-void Fl_Anim_GIF::cb_animate(void *d_) {
-  Fl_Anim_GIF *b = (Fl_Anim_GIF *)d_;
-  b->next_frame();
-}
-
-
-/*virtual*/
-void Fl_Anim_GIF::color_average(Fl_Color c_, float i_) {
-  _fi->average_color = c_;
-  _fi->average_weight = i_;
-}
-
-
-/*virtual*/
-Fl_Anim_GIF * Fl_Anim_GIF::copy(int W_, int H_) {
-  Fl_Anim_GIF *copied = new Fl_Anim_GIF();
-  // copy/resize the animated gif frames (Fl_RGB_Image array)
-  copied->w(W_);
-  copied->h(H_);
-  copied->_fi->canvas_w = W_;
-  copied->_fi->canvas_h = H_;
-  copied->_fi->copy(*_fi); // copy the meta data
-
-  copied->copy_label(label());
-  copied->_uncache = _uncache; // copy 'inherits' frame uncache status
-  copied->_valid = _valid && copied->_fi->frames_size == _fi->frames_size;
-  scale_frame(); // scale current frame now
-  if (copied->_valid && _frame >= 0 && !Fl::has_timeout(cb_animate, copied))
-    copied->start(); // start if original also was started
-  return copied;
-}
-
-
-int Fl_Anim_GIF::debug() const {
-  return _fi->debug();
-}
-
-
-double Fl_Anim_GIF::delay(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].delay;
-  return 0.;
-}
-
-
-void Fl_Anim_GIF::delay(int frame_, double delay_) {
-  if (frame_ >= 0 && frame_ < frames())
-    _fi->frames[frame_].delay = delay_;
-}
-
-
-/*virtual*/
-void Fl_Anim_GIF::desaturate() {
-  _fi->desaturate = true;
-}
-
-
-/*virtual*/
-void Fl_Anim_GIF::draw() {
-  if (this->image()) {
-    int X = x() + (w() - canvas_w()) / 2;
-    int Y = y() + (h() - canvas_h()) / 2;
-    if (_fi->optimize_mem) {
-      int f0 = _frame;
-      while (f0 > 0 && !(_fi->frames[f0].x == 0 && _fi->frames[f0].y == 0 &&
-                         _fi->frames[f0].w == canvas_w() && _fi->frames[f0].h == canvas_h()))
-        --f0;
-      for (int f = f0; f <= _frame; f++) {
-        if (f < _frame && _fi->frames[f].dispose == FrameInfo::DISPOSE_PREVIOUS) continue;
-        if (f < _frame && _fi->frames[f].dispose == FrameInfo::DISPOSE_BACKGROUND) continue;
-        scale_frame(f);
-        if (_fi->frames[f].scalable) {
-          _fi->frames[f].scalable->draw(X + _fi->frames[f].x, Y + _fi->frames[f].y);
-        }
-        else if (_fi->frames[f].rgb) {
-          _fi->frames[f].rgb->draw(X + _fi->frames[f].x, Y +_fi->frames[f].y);
-        }
-      }
-    }
-    else {
-      if (_fi->frames[_frame].scalable) {
-        _fi->frames[_frame].scalable->draw(X, Y);
-        return;
-      }
-      this->image()->draw(X, Y);
-    }
-  }
-}
-
-
-void Fl_Anim_GIF::frame(int frame_) {
-  if (Fl::has_timeout(cb_animate, this)) {
-    Fl::warning("Fl_Anim_GIF::frame(%d): not idle!\n", frame_);
-    return;
-  }
-  if (frame_ >= 0 && frame_ < frames()) {
-    set_frame(frame_);
-  }
-  else {
-    Fl::warning("Fl_Anim_GIF::frame(%d): out of range!\n", frame_);
-  }
-}
-
-
-int Fl_Anim_GIF::frames() const {
-  return _fi->frames_size;
-}
-
-
-int Fl_Anim_GIF::frame() const {
-  return _frame;
-}
-
-
-int Fl_Anim_GIF::frame_x(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].x;
-  return -1;
-}
-
-
-int Fl_Anim_GIF::frame_y(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].y;
-  return -1;
-}
-
-
-int Fl_Anim_GIF::frame_w(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].w;
-  return -1;
-}
-
-
-int Fl_Anim_GIF::frame_h(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].h;
-  return -1;
-}
-
-
-Fl_Image *Fl_Anim_GIF::image() const {
-  return _fi->frames[_frame].rgb;
-}
-
-
-Fl_Image *Fl_Anim_GIF::image(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].rgb;
-  return 0;
-}
-
-
+#include <FL/fl_utf8.h>
 static char *readin(const char *name_, long &sz_) {
   char *buf = 0;
   struct stat s = {};
@@ -756,10 +534,328 @@ static char *readin(const char *name_, long &sz_) {
 }
 
 
-bool Fl_Anim_GIF::load(const char *name_) {
-  DEBUG(("Fl_Anim_GIF:::load '%s'\n", name_));
+#include <stdio.h>
+#include <stdlib.h>
+#include <FL/Fl_RGB_Image.H>
+#include <FL/Fl_Group.H>
+#include <FL/Fl.H>
+
+//
+// class Fl_Anim_GIF_Image implementation
+//
+
+Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
+                                     Fl_Widget *canvas_/* = 0*/,
+                                     unsigned short flags_/* = 0 */) :
+  Inherited(),
+  _name(0),
+  _canvas(canvas_),
+  _uncache(false),
+  _valid(false),
+  _frame(-1),
+  _speed(1),
+  _fi(new FrameInfo()) {
+  _fi->_debug = (flags_ & Debug);
+  _fi->optimize_mem = (flags_ & OptimizeMemory);
+  _valid = load(name_);
+  if (canvas_w() && canvas_h()) {
+    if (!w() && !h()) {
+      w(canvas_w());
+      h(canvas_h());
+    }
+  }
+  canvas(canvas_, flags_);
+  if ((flags_ & Start))
+    start();
+}
+
+
+Fl_Anim_GIF_Image::Fl_Anim_GIF_Image() :
+  Inherited(),
+  _name(0),
+  _canvas(0),
+  _uncache(false),
+  _valid(false),
+  _frame(-1),
+  _speed(1),
+  _fi(new FrameInfo()) {
+}
+
+
+/*virtual*/
+Fl_Anim_GIF_Image::~Fl_Anim_GIF_Image() {
+  Fl::remove_timeout(cb_animate, this);
+  delete _fi;
+  free(_name);
+}
+
+
+void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, unsigned short flags_/* = 0*/) {
+  if (_canvas)
+    _canvas->image(0);
+  _canvas = canvas_;
+  if (_canvas && !(flags_ & DontSetAsImage))
+    _canvas->image(this); // set animation as image() of canvas
+  if (_canvas && !(flags_ & DontResizeCanvas))
+    _canvas->size(w(), h());
+
+  // Note: 'Start' flag is *NOT* used here,
+  //       but an already running animation is restarted.
+  _frame = -1;
+  if (Fl::has_timeout(cb_animate, this)) {
+    Fl::remove_timeout(cb_animate, this);
+    next_frame();
+  }
+}
+
+
+Fl_Widget *Fl_Anim_GIF_Image::canvas() const {
+  return _canvas;
+}
+
+
+int Fl_Anim_GIF_Image::canvas_w() const {
+  return _fi->canvas_w;
+}
+
+
+int Fl_Anim_GIF_Image::canvas_h() const {
+  return _fi->canvas_h;
+}
+
+
+/*static*/
+void Fl_Anim_GIF_Image::cb_animate(void *d_) {
+  Fl_Anim_GIF_Image *b = (Fl_Anim_GIF_Image *)d_;
+  b->next_frame();
+}
+
+
+void Fl_Anim_GIF_Image::clear_frames() {
+  _fi->clear();
+  _valid = false;
+}
+
+
+/*virtual*/
+void Fl_Anim_GIF_Image::color_average(Fl_Color c_, float i_) {
+  _fi->average_color = c_;
+  _fi->average_weight = i_;
+}
+
+
+/*virtual*/
+Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
+  Fl_Anim_GIF_Image *copied = new Fl_Anim_GIF_Image();
+  // copy/resize the base image (Fl_Pixmap)
+  // Note: this is not really necessary, if the draw()
+  //       method never calls the base class.
+  if (_fi->frames_size) {
+    w(_fi->frames[0].w);
+    h(_fi->frames[0].h);
+    Fl_Pixmap *gif = (Fl_Pixmap *)Inherited::copy(W_, H_);
+    copied->Inherited::data(gif->data(), gif->count());
+    copied->alloc_data = gif->alloc_data;
+    gif->alloc_data = 0;
+    delete gif;
+    w(_fi->canvas_w);
+    h(_fi->canvas_h);
+  }
+
+  copied->w(W_);
+  copied->h(H_);
+  copied->_fi->canvas_w = W_;
+  copied->_fi->canvas_h = H_;
+  copied->_fi->copy(*_fi); // copy the meta data
+
+  copied->_uncache = _uncache; // copy 'inherits' frame uncache status
+  copied->_valid = _valid && copied->_fi->frames_size == _fi->frames_size;
+  scale_frame(); // scale current frame now
+  if (copied->_valid && _frame >= 0 && !Fl::has_timeout(cb_animate, copied))
+    copied->start(); // start if original also was started
+  return copied;
+}
+
+
+int Fl_Anim_GIF_Image::debug() const {
+  return _fi->debug();
+}
+
+
+double Fl_Anim_GIF_Image::delay(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].delay;
+  return 0.;
+}
+
+
+void Fl_Anim_GIF_Image::delay(int frame_, double delay_) {
+  if (frame_ >= 0 && frame_ < frames())
+    _fi->frames[frame_].delay = delay_;
+}
+
+
+/*virtual*/
+void Fl_Anim_GIF_Image::desaturate() {
+  _fi->desaturate = true;
+}
+
+
+/*virtual*/
+void Fl_Anim_GIF_Image::draw(int x_, int y_, int w_, int h_, int cx_/* = 0*/, int cy_/* = 0*/) {
+  if (this->image()) {
+    if (_fi->optimize_mem) {
+      int f0 = _frame;
+      while (f0 > 0 && !(_fi->frames[f0].x == 0 && _fi->frames[f0].y == 0 &&
+                       _fi->frames[f0].w == w() && _fi->frames[f0].h == h()))
+        --f0;
+      for (int f = f0; f <= _frame; f++) {
+        if (f < _frame && _fi->frames[f].dispose == FrameInfo::DISPOSE_PREVIOUS) continue;
+        if (f < _frame && _fi->frames[f].dispose == FrameInfo::DISPOSE_BACKGROUND) continue;
+        Fl_RGB_Image *rgb = _fi->frames[f].rgb;
+        if (rgb) {
+          rgb->draw(x_ + _fi->frames[f].x, y_ + _fi->frames[f].y, w_, h_, cx_, cy_);
+        }
+      }
+    }
+    else {
+      this->image()->draw(x_, y_, w_, h_, cx_, cy_);
+    }
+  } else {
+    // Note: should the base class be called here?
+    //       If it is, then the copy() method must also
+    //       copy the base image!
+//    Inherited::draw(x_, y_, w_, h_, cx_, cy_);
+  }
+}
+
+
+int Fl_Anim_GIF_Image::frame() const {
+  return _frame;
+}
+
+
+void Fl_Anim_GIF_Image::frame(int frame_) {
+  if (Fl::has_timeout(cb_animate, this)) {
+    Fl::warning("Fl_Anim_GIF_Image::frame(%d): not idle!\n", frame_);
+    return;
+  }
+  if (frame_ >= 0 && frame_ < frames()) {
+    set_frame(frame_);
+  }
+  else {
+    Fl::warning("Fl_Anim_GIF_Image::frame(%d): out of range!\n", frame_);
+  }
+}
+
+
+int Fl_Anim_GIF_Image::frame_count(const char *name_) {
+  long len = 0;
+  char *buf = readin(name_, len);
+  // decode GIF using gif_load.h
+  int frames = _fi->frame_count(buf, len);
+  free(buf);
+  return frames;
+}
+
+
+int Fl_Anim_GIF_Image::frame_x(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].x;
+  return -1;
+}
+
+
+int Fl_Anim_GIF_Image::frame_y(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].y;
+  return -1;
+}
+
+
+int Fl_Anim_GIF_Image::frame_w(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].w;
+  return -1;
+}
+
+int Fl_Anim_GIF_Image::frame_h(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].h;
+  return -1;
+}
+
+
+void Fl_Anim_GIF_Image::frame_uncache(bool uncache_) {
+  _uncache = uncache_;
+}
+
+
+bool Fl_Anim_GIF_Image::frame_uncache() const {
+  return _uncache;
+}
+
+
+int Fl_Anim_GIF_Image::frames() const {
+  return _fi->frames_size;
+}
+
+
+Fl_Image *Fl_Anim_GIF_Image::image() const {
+  return _frame >= 0 && _frame < frames() ? _fi->frames[_frame].rgb : 0;
+}
+
+
+Fl_Image *Fl_Anim_GIF_Image::image(int frame_) const {
+  if (frame_ >= 0 && frame_ < frames())
+    return _fi->frames[frame_].rgb;
+  return 0;
+}
+
+
+bool Fl_Anim_GIF_Image::is_animated() const {
+  return _valid && _fi->frames_size > 1;
+}
+
+
+/*static*/
+bool Fl_GIF_Image::is_animated(const char *name_) {
+  Fl_Anim_GIF_Image gif;
+  return gif.frame_count(name_);
+}
+
+
+bool Fl_Anim_GIF_Image::load(const char *name_) {
+  DEBUG(("\nFl_Anim_GIF_Image::load '%s'\n", name_));
   clear_frames();
-  copy_label(name_); // TODO: store name as label() or use own field for it?
+  free(_name);
+  _name = name_ ? strdup(name_) : 0;
+
+  // as load() can be called multiple times
+  // we have to replicate the actions of the pixmap destructor here
+  uncache();
+  if (alloc_data) {
+    for (int i = 0; i < count(); i ++) delete[] (char *)data()[i];
+    delete[] (char **)data();
+  }
+  alloc_data = 0;
+  w(0);
+  h(0);
+
+  if (name_) {
+    Fl_GIF_Image tmp(name_);
+    if (tmp.ld() || tmp.w() <= 0 || tmp.h() <= 0)
+      return false;
+    const char * const *p = tmp.data();
+    if (p) {
+      int height, ncolors;
+      sscanf(p[0],"%*d%d%d", &height, &ncolors);
+      if (ncolors < 0) data(p, height + 2);
+      else data(p, height + ncolors + 1);
+      alloc_data = tmp.alloc_data;
+      tmp.alloc_data = 0;
+    }
+  }
 
   // read gif file into memory
   long len = 0;
@@ -781,12 +877,17 @@ bool Fl_Anim_GIF::load(const char *name_) {
 } // load
 
 
-bool Fl_Anim_GIF::next_frame() {
+const char *Fl_Anim_GIF_Image::name() const {
+  return _name;
+}
+
+
+bool Fl_Anim_GIF_Image::next_frame() {
   int frame(_frame);
   frame++;
-  if (frame >= _fi->frames_size) {
+  if (frame >= _fi->frames_size)  {
     _fi->loop++;
-    if (Fl_Anim_GIF::loop && _fi->loop_count > 0 && _fi->loop > _fi->loop_count) {
+    if (Fl_Anim_GIF_Image::loop && _fi->loop_count > 0 && _fi->loop > _fi->loop_count) {
       DEBUG(("loop count %d reached - stopped!\n", _fi->loop_count));
       stop();
     }
@@ -796,12 +897,12 @@ bool Fl_Anim_GIF::next_frame() {
   if (frame >= _fi->frames_size)
     return false;
   set_frame(frame);
-  double delay = _fi->frames[_frame].delay;
-  if (_fi->loop_count != 1 && min_delay && delay < min_delay) {
+  double delay = _fi->frames[frame].delay;
+  if (min_delay && delay < min_delay) {
     DEBUG(("#%d: correct delay %f => %f\n", frame, delay, min_delay));
     delay = min_delay;
   }
-  if (!_stopped && delay > 0 && _speed > 0) {	// normal GIF has no delay
+  if (is_animated() && delay > 0 && _speed > 0) {  // normal GIF has no delay
     delay /= _speed;
     Fl::add_timeout(delay, cb_animate, this);
   }
@@ -809,70 +910,79 @@ bool Fl_Anim_GIF::next_frame() {
 }
 
 
-Fl_Anim_GIF& Fl_Anim_GIF::resize(int W_, int H_) {
+double Fl_Anim_GIF_Image::speed() const {
+  return _speed;
+}
+
+
+void Fl_Anim_GIF_Image::speed(double speed_) {
+  _speed = speed_;
+}
+
+
+bool Fl_Anim_GIF_Image::valid() const {
+  return _valid;
+}
+
+
+Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(int W_, int H_) {
   int W(W_);
   int H(H_);
-  if (!W || !H || ((W == canvas_w() && H == canvas_h()))) {
+  if (_canvas && !W && !H) {
+    W = _canvas->w();
+    H = _canvas->h();
+  }
+  if (!W || !H || ((W == w() && H == h()))) {
     return *this;
   }
   _fi->resize(W, H);
   scale_frame(); // scale current frame now
-  size(W, H);
+  if (_canvas) {
+    _canvas->size(w(), h());
+  }
   return *this;
 }
 
 
-Fl_Anim_GIF& Fl_Anim_GIF::resize(double scale_) {
-  return resize(lround((double)canvas_w() * scale_), lround((double)canvas_h() * scale_));
+Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(double scale_) {
+  return resize(lround((double)w() * scale_), lround((double)h() * scale_));
 }
 
 
-void Fl_Anim_GIF::scale_frame(int frame_/* = -1*/) {
-  int i(frame_ >= 0 ? frame_ : _frame);
-  if (i < 0 || i >= _fi->frames_size)
+void Fl_Anim_GIF_Image::scale_frame() {
+  int i(_frame);
+  if (i < 0)
     return;
   _fi->scale_frame(i);
 }
 
 
-void Fl_Anim_GIF::set_frame(int frame_) {
+void Fl_Anim_GIF_Image::set_frame(int frame_) {
   int last_frame = _frame;
   _frame = frame_;
-  // NOTE: decreases performance, but saves a lot of memory
-  if (_uncache && Inherited::image())
-    Inherited::image()->uncache();
+  // NOTE: uncaching decreases performance, but saves a lot of memory
+  if (_uncache && this->image())
+    this->image()->uncache();
 
   _fi->set_frame(_frame);
 
-  Inherited::image(image());
-  if (parent() && ((last_frame >= 0 && (_fi->frames[last_frame].dispose == FrameInfo::DISPOSE_BACKGROUND ||
-     _fi->frames[last_frame].dispose == FrameInfo::DISPOSE_PREVIOUS)) ||
-     (_frame == 0 )))
-    parent()->redraw();
-  else
-    redraw();
-  static bool recurs = false;
-  if (!recurs) {
-    recurs = true;
-    do_callback();
-    recurs = false;
+  if (canvas()) {
+    if ((last_frame >= 0 && (_fi->frames[last_frame].dispose == FrameInfo::DISPOSE_BACKGROUND ||
+        _fi->frames[last_frame].dispose == FrameInfo::DISPOSE_PREVIOUS)) ||
+        (_frame == 0 )) {
+      if (canvas()->parent()) {
+        canvas()->parent()->redraw();
+      } else {
+        canvas()->redraw();
+      }
+    } else {
+      canvas()->redraw();
+    }
   }
 }
 
 
-double Fl_Anim_GIF::speed() const {
-  return _speed;
-}
-
-
-void Fl_Anim_GIF::speed(double speed_) {
-  _speed = speed_;
-}
-
-
-bool Fl_Anim_GIF::start() {
-  _stopped = false;
-  _fi->loop = 0;
+bool Fl_Anim_GIF_Image::start() {
   Fl::remove_timeout(cb_animate, this);
   if (_fi->frames_size) {
     next_frame();
@@ -881,23 +991,16 @@ bool Fl_Anim_GIF::start() {
 }
 
 
-bool Fl_Anim_GIF::stop() {
+bool Fl_Anim_GIF_Image::stop() {
   Fl::remove_timeout(cb_animate, this);
-  _stopped = true;
   return _fi->frames_size != 0;
 }
 
 
-void Fl_Anim_GIF::uncache(bool uncache_) {
-  _uncache = uncache_;
-}
-
-
-bool Fl_Anim_GIF::uncache() const {
-  return _uncache;
-}
-
-
-bool Fl_Anim_GIF::valid() const {
-  return _valid;
+/*virtual*/
+void Fl_Anim_GIF_Image::uncache() {
+  Inherited::uncache();
+  for (int i=0; i < _fi->frames_size; i++) {
+    if (_fi->frames[i].rgb) _fi->frames[i].rgb->uncache();
+  }
 }
