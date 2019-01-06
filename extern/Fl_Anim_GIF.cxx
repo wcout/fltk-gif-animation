@@ -331,7 +331,6 @@ void Fl_Anim_GIF::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
 #endif
   }
 
-  printf("background_color_index = %d\n", background_color_index);
   if (background_color_index >= 0) {
       background_color = RGBA_Color(whdr_.cpal[background_color_index].R,
                                     whdr_.cpal[background_color_index].G,

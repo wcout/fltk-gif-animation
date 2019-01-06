@@ -293,6 +293,7 @@ bool Fl_Anim_GIF_Image::FrameInfo::load(char *buf_, long len_) {
 
 
 void Fl_Anim_GIF_Image::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
+  static bool warn = false;
   if (whdr_.ifrm && !valid) return; // if already invalid, just ignore rest
   int delay = whdr_.time;
   if ( delay < 0 )
@@ -307,18 +308,29 @@ void Fl_Anim_GIF_Image::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
   if (!whdr_.ifrm) {
     // first frame, get width/height
     valid = true; // may be reset later from loading callback
+    warn = true;
     canvas_w = whdr_.xdim;
     canvas_h = whdr_.ydim;
     offscreen = new uchar[canvas_w * canvas_h * 4];
     memset(offscreen, 0, canvas_w * canvas_h * 4);
-    background_color_index = whdr_.clrs ? whdr_.bkgd : -1;
+    background_color_index = whdr_.clrs && whdr_.bkgd < whdr_.clrs ? whdr_.bkgd : -1;
   }
 
   if (!whdr_.clrs) {
     // Note: unfortunately we do not have a filename here..
-    Fl::warning("GIF does not have a colormap\n");
+    if (warn) Fl::error("GIF does not have a colormap\n");
+    warn = false;
+#if 0
     valid = false;
     return;
+#else
+    whdr_.clrs = 2;
+    whdr_.cpal[0].R = whdr_.cpal[0].G = whdr_.cpal[0].B = 0; // white
+    whdr_.cpal[1].R = whdr_.cpal[1].G = whdr_.cpal[1].B = 0xff; // black
+    for (int i = 2; i < 256; i++) {
+      whdr_.cpal[i].R = whdr_.cpal[i].G = whdr_.cpal[i].B = (uchar)(255 * i / 255);
+    }
+#endif
   }
 
   if (background_color_index >= 0) {
@@ -332,7 +344,7 @@ void Fl_Anim_GIF_Image::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
   frame.w = whdr_.frxd;
   frame.h = whdr_.fryd;
   frame.delay = convertDelay(delay);
-  frame.transparent_color_index = whdr_.tran;
+  frame.transparent_color_index = whdr_.tran && whdr_.tran < whdr_.clrs ? whdr_.tran : -1;
   frame.dispose = (Dispose)whdr_.mode;
   if (frame.transparent_color_index >= 0) {
     frame.transparent_color = RGBA_Color(whdr_.cpal[frame.transparent_color_index].R,
@@ -345,10 +357,11 @@ void Fl_Anim_GIF_Image::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
     delay, whdr_.mode, whdr_.tran));
 
   // we know now everything we need about the frame..
-  dispose(frames_size-1);
+  dispose(frames_size - 1);
 
   // copy image data to offscreen
   uchar *bits = whdr_.bptr;
+  uchar *endp = offscreen + canvas_w * canvas_h * 4;
   for (int y = frame.y; y < frame.y + frame.h; y++) {
     for (int x = frame.x; x < frame.x + frame.w; x++) {
       uchar c = *bits++;
@@ -356,6 +369,8 @@ void Fl_Anim_GIF_Image::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
         continue;
       uchar *buf = offscreen;
       buf += (y * canvas_w * 4 + (x * 4));
+      if (buf >= endp)
+        continue;
       *buf++ = whdr_.cpal[c].R;
       *buf++ = whdr_.cpal[c].G;
       *buf++ = whdr_.cpal[c].B;
@@ -369,7 +384,8 @@ void Fl_Anim_GIF_Image::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
     uchar *dest = buf;
     for (int y = frame.y; y < frame.y + frame.h; y++) {
       for (int x = frame.x; x < frame.x + frame.w; x++) {
-        memcpy(dest, &offscreen[y * canvas_w * 4 + x * 4], 4);
+        if (offscreen + y * canvas_w * 4 + x * 4 < endp)
+          memcpy(dest, &offscreen[y * canvas_w * 4 + x * 4], 4);
         dest += 4;
       }
     }
