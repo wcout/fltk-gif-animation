@@ -8,7 +8,7 @@ targets="animgif animgif-resize animgif-simple"
 src=extern
 #opt=-pg
 # Use shared image scaling feature (which uses fast XRender scaling on X11)
-opt=-DUSE_SHIMAGE_SCALING
+opt="-DUSE_SHIMAGE_SCALING -fsanitize=address"
 
 # build the test programs
 fltkconfig=$fltk"fltk-config"
