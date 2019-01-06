@@ -843,18 +843,13 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   h(0);
 
   if (name_) {
+    // load the base class pixmap
     Fl_GIF_Image tmp(name_);
-    if (tmp.ld() || tmp.w() <= 0 || tmp.h() <= 0)
+    if (tmp.ld() || tmp.w() <= 0 || tmp.h() <= 0 || !tmp.data())
       return false;
-    const char * const *p = tmp.data();
-    if (p) {
-      int height, ncolors;
-      sscanf(p[0],"%*d%d%d", &height, &ncolors);
-      if (ncolors < 0) data(p, height + 2);
-      else data(p, height + ncolors + 1);
-      alloc_data = tmp.alloc_data;
-      tmp.alloc_data = 0;
-    }
+    Inherited::data(tmp.data(), tmp.count());
+    alloc_data = tmp.alloc_data;
+    tmp.alloc_data = 0;
   }
 
   // read gif file into memory
