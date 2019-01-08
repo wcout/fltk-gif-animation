@@ -82,7 +82,8 @@ class Fl_Anim_GIF_Image::FrameInfo {
     RGBA_Color transparent_color;     // needed for dispose()
   };
 
-  FrameInfo() :
+  FrameInfo(Fl_Anim_GIF_Image *anim_) :
+    _anim(anim_),
     valid(false),
     frames_size(0),
     frames(0),
@@ -110,7 +111,8 @@ class Fl_Anim_GIF_Image::FrameInfo {
   void scale_frame(int frame_);
   void set_frame(int frame_);
 private:
-  bool valid;
+  Fl_Anim_GIF_Image *_anim;         // a pointer to the Image (only needed for name())
+  bool valid;                       // flag ig valid data
   int frames_size;                  // number of frames stored in 'frames'
   GifFrame *frames;                 // "vector" for frames
   int loop_count;                   // loop count from file
@@ -252,7 +254,7 @@ void Fl_Anim_GIF_Image::FrameInfo::dispose(int frame_) {
         while (prev > 0 && frames[prev].dispose == DISPOSE_PREVIOUS)
           prev--;
         if (prev == 0 && frames[prev].dispose == DISPOSE_PREVIOUS) {
-          setToBackGround(-1);
+          setToBackGround(frame_);
           return;
         }
         DEBUG(("  dispose frame %d to previous frame %d\n", frame_ + 1, prev + 1));
@@ -303,8 +305,6 @@ void Fl_Anim_GIF_Image::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
         whdr_.ifrm + 1, whdr_.nfrm, whdr_.frxd, whdr_.fryd,
         delay, whdr_.intr, whdr_.bkgd, whdr_.clrs, whdr_.mode));
 
-  deinterlace(whdr_);
-
   if (!whdr_.ifrm) {
     // first frame, get width/height
     valid = true; // may be reset later from loading callback
@@ -313,31 +313,36 @@ void Fl_Anim_GIF_Image::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
     canvas_h = whdr_.ydim;
     offscreen = new uchar[canvas_w * canvas_h * 4];
     memset(offscreen, 0, canvas_w * canvas_h * 4);
-    background_color_index = whdr_.clrs && whdr_.bkgd < whdr_.clrs ? whdr_.bkgd : -1;
   }
 
   if (!whdr_.clrs) {
-    // Note: unfortunately we do not have a filename here..
-    if (warn) Fl::error("GIF does not have a colormap\n");
-    warn = false;
-#if 0
-    valid = false;
-    return;
-#else
-    whdr_.clrs = 2;
-    whdr_.cpal[0].R = whdr_.cpal[0].G = whdr_.cpal[0].B = 0; // white
-    whdr_.cpal[1].R = whdr_.cpal[1].G = whdr_.cpal[1].B = 0xff; // black
-    for (int i = 2; i < 256; i++) {
-      whdr_.cpal[i].R = whdr_.cpal[i].G = whdr_.cpal[i].B = (uchar)(255 * i / 255);
+    // no colors: use default table
+    static struct GIF_WHDR::CPAL defClrs[256];
+    whdr_.clrs = 1 << (whdr_.cres + 1);
+    whdr_.cpal = defClrs;
+    if (warn) {
+      Fl::warning("%s does not have a color table, using default.\n", _anim->name());
+      warn = false;
+      memset(defClrs, 0, sizeof(defClrs)); // Note: also sets first color to black
+      defClrs[1].R = defClrs[1].G = defClrs[1].B = 0xff; // white
+      for (int i = 2; i < whdr_.clrs; i++)
+        defClrs[i].R = defClrs[i].G = defClrs[i].B = (uchar)(255 * i / (whdr_.clrs - 1));
     }
-#endif
   }
 
-  if (background_color_index >= 0) {
-      background_color = RGBA_Color(whdr_.cpal[background_color_index].R,
-                                    whdr_.cpal[background_color_index].G,
-                                    whdr_.cpal[background_color_index].B);
+  deinterlace(whdr_);
+
+  if (!whdr_.ifrm) {
+    // store background_color AFTER color table is set
+    background_color_index = whdr_.clrs && whdr_.bkgd < whdr_.clrs ? whdr_.bkgd : -1;
+
+    if (background_color_index >= 0) {
+        background_color = RGBA_Color(whdr_.cpal[background_color_index].R,
+                                      whdr_.cpal[background_color_index].G,
+                                      whdr_.cpal[background_color_index].B);
+    }
   }
+
   // process frame
   frame.x = whdr_.frxo;
   frame.y = whdr_.fryo;
@@ -564,13 +569,13 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
                                      Fl_Widget *canvas_/* = 0*/,
                                      unsigned short flags_/* = 0 */) :
   Inherited(),
-  _name(0),
+  _name(name_ ? strdup(name_) : 0),
   _canvas(canvas_),
   _uncache(false),
   _valid(false),
   _frame(-1),
   _speed(1),
-  _fi(new FrameInfo()) {
+  _fi(new FrameInfo(this)) {
   _fi->_debug = (flags_ & Debug);
   _fi->optimize_mem = (flags_ & OptimizeMemory);
   _valid = load(name_);
@@ -594,7 +599,7 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image() :
   _valid(false),
   _frame(-1),
   _speed(1),
-  _fi(new FrameInfo()) {
+  _fi(new FrameInfo(this)) {
 }
 
 
@@ -873,7 +878,21 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   char *buf = readin(name_, len);
   if (!buf) {
     Fl::error("Fl_Anim_GIF: Unable to open '%s': %s\n", name_, strerror(errno));
+    ld(ERR_FILE_ACCESS);
+    free(buf);
     return false;
+  }
+
+  // do own signature checking, to issue proper error/warning msg
+  // (gif_load accepts only 'GIF87a' or 'GIF89a')
+  if (len < 6 || buf[0] !='G' || buf[1] !='I' || buf[2] != 'F') {
+    Fl::error("Fl_GIF_Image: %s is not a GIF file.\n", name_);
+    free(buf);
+    return false;
+  }
+  if (buf[3]!='8' || buf[4] >'9' || buf[5] != 'a') {
+    Fl::warning("%s is version %c%c%c.", name_, buf[3], buf [4], buf[5]);
+    strncpy(&buf[3], "89a", 3); // make gif_load happy
   }
 
   // decode GIF using gif_load.h
@@ -883,6 +902,7 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
 
   if (!_fi->valid) {
     Fl::error("Fl_Anim_GIF: %s has invalid format.\n", name_);
+    ld(ERR_FORMAT);
   }
   return _fi->valid;
 } // load
