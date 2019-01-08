@@ -163,6 +163,10 @@ public:
    */
   static double min_delay;
   /**
+   Return the name of the played file as specified in the constructor.
+   */
+  const char *name() const;
+  /**
    The speed() method changes the playing speed
    to speed_ x original speed. E.g. to play at half
    speed call it with 0.5, for double speed with 2.
@@ -216,6 +220,8 @@ private:
   void onFrameLoaded(GIF_WHDR &whdr_);
   void onExtensionLoaded(GIF_WHDR &whdr_);
   void _init(const char*name_, bool start_, bool optimize_mem_, int debug_);
+private:
+  char *_name;
   bool _valid;
   bool _uncache;
   bool _stopped;
