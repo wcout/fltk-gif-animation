@@ -887,6 +887,7 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   // (gif_load accepts only 'GIF87a' or 'GIF89a')
   if (len < 6 || buf[0] !='G' || buf[1] !='I' || buf[2] != 'F') {
     Fl::error("Fl_GIF_Image: %s is not a GIF file.\n", name_);
+    ld(ERR_FORMAT);
     free(buf);
     return false;
   }
