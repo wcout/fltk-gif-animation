@@ -1,0 +1,157 @@
+diff --git a/src/fl_images_core.cxx b/src/fl_images_core.cxx
+index 58fcd2e5f..93fe77131 100644
+--- a/src/fl_images_core.cxx
++++ b/src/fl_images_core.cxx
+@@ -28,6 +28,7 @@
+ #include <FL/Fl_Shared_Image.H>
+ #include <FL/Fl_BMP_Image.H>
+ #include <FL/Fl_GIF_Image.H>
++#include <FL/Fl_Anim_GIF_Image.H>
+ #include <FL/Fl_JPEG_Image.H>
+ #include <FL/Fl_PNG_Image.H>
+ #include <FL/Fl_PNM_Image.H>
+@@ -70,7 +71,8 @@ fl_check_images(const char *name,		// I - Filename
+ 		int headerlen) {		// I - Amount of data
+   if (memcmp(header, "GIF87a", 6) == 0 ||
+       memcmp(header, "GIF89a", 6) == 0)	// GIF file
+-    return new Fl_GIF_Image(name);
++    return Fl_GIF_Image::animate ? new Fl_Anim_GIF_Image(name, 0, Fl_Anim_GIF_Image::Start) :
++                                   new Fl_GIF_Image(name);
+ 
+   if (memcmp(header, "BM", 2) == 0)	// BMP file
+     return new Fl_BMP_Image(name);
+diff --git a/test/file_chooser.cxx b/test/file_chooser.cxx
+index 6a5b42bcc..d316455a4 100644
+--- a/test/file_chooser.cxx
++++ b/test/file_chooser.cxx
+@@ -36,6 +36,7 @@
+ #include <FL/Fl_File_Chooser.H>
+ #include <FL/Fl_File_Icon.H>
+ #include <FL/Fl_Shared_Image.H>
++#include <FL/Fl_GIF_Image.H>
+ #include <FL/Fl_PNM_Image.H>
+ #include <FL/Fl_Light_Button.H>
+ #include <FL/Fl_Double_Window.H>
+@@ -79,6 +80,11 @@ void		show_callback(void);
+ 
+ void		extra_callback(Fl_Choice*,void*);
+ 
++static void cb_refresh(void *d) {
++  Fl::first_window()->redraw();
++  Fl::repeat_timeout(1./50, cb_refresh, d);
++}
++
+ //
+ // 'main()' - Create a file chooser and wait for a selection to be made.
+ //
+@@ -94,6 +100,7 @@ main(int  argc,		// I - Number of command-line arguments
+ 
+ 
+   // Make the file chooser...
++  Fl_GIF_Image::animate = true; // allow creating animated GIF objects
+   Fl::scheme(NULL);
+   Fl_File_Icon::load_system_icons();
+ 
+@@ -184,6 +191,7 @@ main(int  argc,		// I - Number of command-line arguments
+   window->end();
+   window->show(1, argv);
+ 
++  Fl::add_timeout(1./50, cb_refresh, window);
+   Fl::run();
+ 
+   return (0);
+diff --git a/test/help_dialog.cxx b/test/help_dialog.cxx
+index e2bc8f837..fe557884f 100644
+--- a/test/help_dialog.cxx
++++ b/test/help_dialog.cxx
+@@ -26,8 +26,15 @@
+ //
+ 
+ #include <FL/Fl_Help_Dialog.H>
++#include <FL/Fl_GIF_Image.H>
+ #include <FL/filename.H>	/* FL_PATH_MAX */
+ #include <string.h>		/* strcpy(), etc */
++#include <FL/Fl.H>
++
++static void cb_refresh(void *d) {
++  Fl::first_window()->redraw();
++  Fl::repeat_timeout(1./50, cb_refresh, d);
++}
+ 
+ //
+ // 'main()' - Display the help GUI...
+@@ -37,6 +44,7 @@ int				// O - Exit status
+ main(int  argc,			// I - Number of command-line arguments
+      char *argv[])		// I - Command-line arguments
+ {
++  Fl_GIF_Image::animate = true; // allow creating animated GIF objects
+   Fl_Help_Dialog *help = new Fl_Help_Dialog;
+   char htmlname[FL_PATH_MAX];
+   if (argc > 1) {
+@@ -56,6 +64,7 @@ main(int  argc,			// I - Number of command-line arguments
+ 
+   help->show(1, argv);
+ 
++  Fl::add_timeout(1./50, cb_refresh, help);
+   Fl::run();
+ 
+   delete help;
+diff --git a/test/pixmap_browser.cxx b/test/pixmap_browser.cxx
+index 7d2ea3c3c..f86739e90 100644
+--- a/test/pixmap_browser.cxx
++++ b/test/pixmap_browser.cxx
+@@ -22,6 +22,8 @@
+ #include <FL/Fl_Double_Window.H>
+ #include <FL/Fl_Button.H>
+ #include <FL/Fl_Shared_Image.H>
++#include <FL/Fl_GIF_Image.H>
++#include <FL/Fl_Anim_GIF_Image.H>
+ #include <FL/Fl_Printer.H>
+ #include <string.h>
+ #include <errno.h>
+@@ -35,6 +37,29 @@ Fl_Shared_Image *img;
+ 
+ static char name[1024];
+ 
++static bool test_image(Fl_Image *img) {
++  // how to find out if image is an animated GIF?
++  // (dynamic_cast doesn't work for some reason)
++  return img;
++}
++
++static bool containsImage(Fl_Group *g) {
++  for (int i=0; i<g->children(); i++) {
++    if (g->child(i)->as_group()) return containsImage(g->child(i)->as_group());
++    if (test_image(g->child(i)->image())) return true;
++  }
++  return false;
++}
++
++static void cb_refresh(void *d) {
++  Fl_Window *win = Fl::first_window();
++  while (win) {
++    if (containsImage(win)) win->redraw();
++    win = Fl::next_window(win);
++  }
++  Fl::repeat_timeout(1./50, cb_refresh, d);
++}
++
+ void load_file(const char *n) {
+   if (img) {
+     ((Fl_Shared_Image*)b->image())->release();
+@@ -111,6 +136,7 @@ int arg(int, char **argv, int &i) {
+ int main(int argc, char **argv) {
+   int i = 1;
+ 
++  Fl_GIF_Image::animate = true; // allow creating animated GIF objects
+   fl_register_images();
+ 
+   Fl::args(argc,argv,i,arg);
+@@ -128,6 +154,7 @@ int main(int argc, char **argv) {
+   print.callback(print_cb);
+ 
+   window.show(argc,argv);
++  Fl::add_timeout(1./50, cb_refresh, &window);
+   return Fl::run();
+ }
+ 
