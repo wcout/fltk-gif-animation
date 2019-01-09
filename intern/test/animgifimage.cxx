@@ -235,7 +235,9 @@ int main(int argc_, char *argv_[]) {
   } else {
     Fl_GIF_Image::animate = true; // create animated shared .GIF images (e.g. file chooser)
     while (1) {
+      Fl::add_timeout(0.1, cb_forced_redraw); // animate images in chooser
       const char *filename = fl_file_chooser("Select a GIF image file","*.{gif,GIF}", NULL);
+      Fl::remove_timeout(cb_forced_redraw);
       if (!filename)
         break;
       Fl_Window *win = openFile(filename, openFlags);
