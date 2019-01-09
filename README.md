@@ -17,8 +17,8 @@ My first solution was an external Widget `Fl_Anim_GIF`, derived from the basic F
 This solution works well and can be found in the folder `extern`<del> 
 
 But Kleine Bre's design approach to expand the `Fl_GIF_Image` class with animation capabilties
-seems advantegeous. On the other hand I did not want to have `Fl_GIF_Image` load animated files
-whithout being asked to. There was also a technical reason not to extend `Fl_GIF_Image`:
+seems advantegeous. But I did not want to have `Fl_GIF_Image` load animated files
+whithout being asked to and there was also a technical reason not to extend `Fl_GIF_Image`:
 `Fl_GIF_Image` converts the images to `XPM` format and the transparent color is always put
 at the first entry of the color table. This leads to problems when other frames of the GIF
 have a different transparent color index.
@@ -32,7 +32,7 @@ This solution can be found in the folder `intern`:
 
 The files there can be copied directly into the FLTK source tree to replace the current GIF code.
 
-`Fl_GIF_Image.cxx` is basically the original FLTK widget with some minor neccessary
+`Fl_GIF_Image.cxx` is basically the original FLTK widget with some minor necessary
 changes (e.g. default constructor).
 
 `Fl_Anim_GIF_Image.H`, `Fl_Anim_GIF_Image.cxx` is the implementation of the animated GIF
@@ -51,11 +51,11 @@ Some test programs are included in both solutions.
 
 Both solutions offer roughly the same functionality:
 
-- `copy()`, `resize()` with fast image scaling with lazy (on-time) rescaling and usage
-  of FLTK's (from version 1.4) image scaling feature
+- `copy()`, `resize()` with lazy (on-time) rescaling and usage of FLTK's
+  (from version 1.4) fast image scaling feature
 - `color_average()` and `desaturate()` methods
-- also it possible to run several instances of the _same_ animation simultaneously
-  and to use it as tiles in `Fl_Tiled_Image`
+- it also possible to run several instances of the _same_ animation simultaneously
+  and to use it as tiles in `Fl_Tiled_Image` (internal solution only).
 - application controlled playback possible
 
 ## Building
