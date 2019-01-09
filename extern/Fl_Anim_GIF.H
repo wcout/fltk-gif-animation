@@ -1,5 +1,5 @@
 //
-// Copyright 2016-2018 Christian Grabner <wcout@gmx.net>
+// Copyright 2016-2019 Christian Grabner <wcout@gmx.net>
 //
 // Fl_Anim_GIF widget - FLTK animated GIF widget.
 //
@@ -19,7 +19,7 @@
 
 class Fl_Image;
 class RGB_Image;
-struct FrameInfo;
+struct GIF_WHDR;
 
 #include <FL/Fl_Box.H>
 
@@ -32,6 +32,9 @@ struct FrameInfo;
  */
 class Fl_Anim_GIF : public Fl_Box {
   typedef Fl_Box Inherited;
+
+  class FrameInfo;
+
 public:
   /**
    The constructor creates an new animated gif object from
@@ -49,9 +52,9 @@ public:
    default.
    */
   Fl_Anim_GIF(int x_, int y_, int w_, int h_, const char *name_ = 0,
-              bool start_ = true, bool optimize_mem_ = false, bool debug_ = false);
+              bool start_ = true, bool optimize_mem_ = false, int debug_ = 0);
   Fl_Anim_GIF(int x_, int y_, const char *name_ = 0,
-              bool start_ = true, bool optimize_mem_ = false, bool debug_ = false);
+              bool start_ = true, bool optimize_mem_ = false, int debug_ = 0);
   /**
    The destructor stops a running animation and releases all
    resources.
@@ -79,6 +82,11 @@ public:
    */
   virtual Fl_Anim_GIF *copy(int W_, int H_);
   /**
+   The debug() method returns if the class has
+   set the debug option in it's constructor.
+   */
+  int debug() const;
+  /**
    The desaturate() method applies desaturate() to all frames
    of the animation.
    */
@@ -91,6 +99,20 @@ public:
    Set the delay of frame 'frame_' `[0-frames() -1]` in seconds
    */
   void delay(int frame_, double delay_);
+  /**
+   Return the frame position of frame 'frame_'
+   Usefull only if loaded with 'optimize_mem' and
+   the animation also has size optimized frames.
+   */
+  int frame_x(int frame_) const;
+  int frame_y(int frame_) const;
+  /**
+   Return the frame dimensions of frame 'frame_'.
+   Usefull only if loaded with 'optimize_mem' and
+   the animation also has size optimized frames.
+   */
+  int frame_w(int frame_) const;
+  int frame_h(int frame_) const;
   /**
    Return the number of frames.
    */
@@ -125,12 +147,30 @@ public:
    */
   bool load(const char *name_);
   /**
+   The loop flag can be used to (dis-)allow loop count.
+   If set (which is the default), the animation will be
+   stopped after the number of repeats specified in the
+   GIF file (typically this count is set to 'forever' anyway).
+   If cleared the animation will always be 'forever',
+   regardless of what is specified in the GIF file.
+   */
+  static bool loop;
+  /**
    The min_delay value can be used to set a minimum value
    for the frame delay for playback. This is to prevent
    cpu hogs caused by images with very low delay rates.
    This is a global value for all Fl_Anim_GIF objects.
    */
   static double min_delay;
+  /**
+   Return the name of the played file as specified in the constructor.
+   */
+  const char *name() const;
+  /**
+   The speed() method changes the playing speed
+   to speed_ x original speed. E.g. to play at half
+   speed call it with 0.5, for double speed with 2.
+   */
   /**
    The speed() method changes the playing speed
    to speed_ x original speed. E.g. to play at half
@@ -165,36 +205,23 @@ public:
    one frame.
    */
   bool valid() const;
-  /**
-   Return the frame position of frame 'frame_'
-   Usefull only if loaded with 'optimize_mem' and
-   the animation also has size optimized frames.
-   */
-  int frame_x(int frame_) const;
-  int frame_y(int frame_) const;
-  /**
-   Return the frame dimensions of frame 'frame_'.
-   Usefull only if loaded with 'optimize_mem' and
-   the animation also has size optimized frames.
-   */
-  int frame_w(int frame_) const;
-  int frame_h(int frame_) const;
-  /**
-   The debug() method returns if the class has
-   set the debug option in it's constructor.
-   */
-  bool debug() const;
 protected:
   bool next_frame();
   void clear_frames();
   void set_frame(int frame_);
 private:
   static void cb_animate(void *d_);
+  static void cb_gl_frame(void *ctx_, GIF_WHDR *whdr_);
+  static void cb_gl_extension(void *ctx_, GIF_WHDR *whdr_);
   void scale_frame(int frame_ = -1);
 private:
   Fl_Anim_GIF();
   virtual void draw();
-  void init(const char*name_, bool start_, bool optimize_mem_, bool debug_);
+  void onFrameLoaded(GIF_WHDR &whdr_);
+  void onExtensionLoaded(GIF_WHDR &whdr_);
+  void _init(const char*name_, bool start_, bool optimize_mem_, int debug_);
+private:
+  char *_name;
   bool _valid;
   bool _uncache;
   bool _stopped;

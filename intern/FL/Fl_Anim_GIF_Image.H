@@ -1,5 +1,5 @@
 //
-// Copyright 2016-2018 Christian Grabner <wcout@gmx.net>
+// Copyright 2016-2019 Christian Grabner <wcout@gmx.net>
 //
 // Fl_Anim_GIF_Image class - FLTK animated GIF extension.
 //
@@ -18,7 +18,6 @@
 #define Fl_Anim_Gif_Image_H
 
 class Fl_Image;
-struct FrameInfo;
 class Fl_Widget;
 
 #include <FL/Fl_GIF_Image.H>
@@ -34,9 +33,12 @@ class Fl_Widget;
  the animation by specifying it in the constructor or later
  using the canvas() method.
  */
-class Fl_Anim_GIF_Image : public Fl_GIF_Image {
+class FL_EXPORT Fl_Anim_GIF_Image : public Fl_GIF_Image {
   typedef Fl_GIF_Image Inherited;
 public:
+
+  class FrameInfo; // internal helper class
+
   /**
    When opening a Fl_Anim_GIF_Image there are some options
    that can be passed in a 'flags' value.
@@ -117,6 +119,7 @@ public:
    the current resize method.
    */
   virtual Fl_Image *copy(int W_, int H_);
+  int debug() const;
   /**
    The desaturate() method applies desaturate() to all frames
    of the animation.
@@ -157,6 +160,7 @@ public:
    testing the valid flag and the frame count beeing greater 1.
    */
   bool is_animated() const;
+  int frame_count(const char *name_);
   /**
    Use frame_uncache() to set or forbid frame image uncaching.
    If frame uncaching is set, frame images are not offscreen cached
@@ -176,6 +180,15 @@ public:
    animation from another file.
    */
   bool load(const char *name_);
+  /**
+   The loop flag can be used to (dis-)allow loop count.
+   If set (which is the default), the animation will be
+   stopped after the number of repeats specified in the
+   GIF file (typically this count is set to 'forever' anyway).
+   If cleared the animation will always be 'forever',
+   regardless of what is specified in the GIF file.
+   */
+  static bool loop;
   /**
    The min_delay value can be used to set a minimum value
    for the frame delay for playback. This is to prevent

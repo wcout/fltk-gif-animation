@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_GIF_Image.cxx 10751 2015-06-14 17:07:31Z AlbrechtS $"
+// "$Id$"
 //
 // Fl_GIF_Image routines.
 //
-// Copyright 1997-2015 by Bill Spitzak and others.
+// Copyright 1997-2019 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -20,6 +20,16 @@
 //
 
 //
+// Reference: GIF89a Specification (links valid as of Jan 05, 2019):
+//
+// "GRAPHICS INTERCHANGE FORMAT(sm), Version 89a" (authoritative):
+// https://www.w3.org/Graphics/GIF/spec-gif89a.txt
+//
+// HTML version (non-authoritative):
+// https://web.archive.org/web/20160304075538/http://qalle.net/gif89a.php
+//
+
+//
 // Include necessary header files...
 //
 
@@ -27,133 +37,48 @@
 #include <FL/Fl_GIF_Image.H>
 #include <stdio.h>
 #include <stdlib.h>
+#include <FL/fl_utf8.h>
+#include "flstring.h"
 
-#include "fl_gif_private.H"  // GIFLIB decoding functions
-#include <cmath> // lround()
+// Read a .gif file and convert it to a "xpm" format (actually my
+// modified one with compressed colormaps).
 
-/*static*/
-bool Fl_GIF_Image::animate = false;
+// Extensively modified from original code for gif2ras by
+// Patrick J. Naughton of Sun Microsystems.  The original
+// copyright notice follows:
 
-//
-// This routine is a modified version of GIFLIB's
-// DGifSlurp(), that reads only one image per time.
-//
-
-static SavedImage *DGifSlurpImage(GifFileType *GifFile) {
-  size_t ImageSize;
-  GifRecordType RecordType(UNDEFINED_RECORD_TYPE);
-  SavedImage *sp;
-  GifByteType *ExtData;
-  int ExtFunction;
-
-  GifFile->ExtensionBlocks = NULL;
-  GifFile->ExtensionBlockCount = 0;
-
-  do {
-    if (DGifGetRecordType(GifFile, &RecordType) == GIF_ERROR)
-      return (0);
-
-    switch (RecordType) {
-      case IMAGE_DESC_RECORD_TYPE:
-        if (DGifGetImageDesc(GifFile) == GIF_ERROR)
-          return (0);
-
-        sp = &GifFile->SavedImages[GifFile->ImageCount - 1];
-        /* Allocate memory for the image */
-        if (sp->ImageDesc.Width < 0 && sp->ImageDesc.Height < 0 &&
-            sp->ImageDesc.Width > (INT_MAX / sp->ImageDesc.Height)) {
-          return 0;
-        }
-        ImageSize = sp->ImageDesc.Width * sp->ImageDesc.Height;
-
-        if (ImageSize > (SIZE_MAX / sizeof(GifPixelType))) {
-          return 0;
-        }
-        sp->RasterBits = (unsigned char *)giflib_reallocarray(NULL, ImageSize,
-                         sizeof(GifPixelType));
-
-        if (sp->RasterBits == NULL) {
-          return 0;
-        }
-
-        if (sp->ImageDesc.Interlace) {
-          int i, j;
-          /*
-           * The way an interlaced image should be read -
-           * offsets and jumps...
-           */
-          int InterlacedOffset[] = { 0, 4, 2, 1 };
-          int InterlacedJumps[] = { 8, 8, 4, 2 };
-          /* Need to perform 4 passes on the image */
-          for (i = 0; i < 4; i++)
-            for (j = InterlacedOffset[i];
-                 j < sp->ImageDesc.Height;
-                 j += InterlacedJumps[i]) {
-              if (DGifGetLine(GifFile,
-                              sp->RasterBits+j*sp->ImageDesc.Width,
-                              sp->ImageDesc.Width) == GIF_ERROR)
-                return 0;
-            }
-        } else {
-          if (DGifGetLine(GifFile,sp->RasterBits,ImageSize)==GIF_ERROR)
-            return (0);
-        }
-
-        if (GifFile->ExtensionBlocks) {
-          sp->ExtensionBlocks = GifFile->ExtensionBlocks;
-          sp->ExtensionBlockCount = GifFile->ExtensionBlockCount;
-
-          GifFile->ExtensionBlocks = NULL;
-          GifFile->ExtensionBlockCount = 0;
-        }
-        /* return image pointer */
-        return sp;
-
-      case EXTENSION_RECORD_TYPE:
-        if (DGifGetExtension(GifFile,&ExtFunction,&ExtData) == GIF_ERROR)
-          return (GIF_ERROR);
-        /* Create an extension block with our data */
-        if (ExtData != NULL) {
-          if (GifAddExtensionBlock(&GifFile->ExtensionBlockCount,
-                                   &GifFile->ExtensionBlocks,
-                                   ExtFunction, ExtData[0], &ExtData[1])
-              == GIF_ERROR)
-            return (0);
-        }
-        while (ExtData != NULL) {
-          if (DGifGetExtensionNext(GifFile, &ExtData) == GIF_ERROR)
-            return (0);
-          /* Continue the extension block */
-          if (ExtData != NULL)
-            if (GifAddExtensionBlock(&GifFile->ExtensionBlockCount,
-                                     &GifFile->ExtensionBlocks,
-                                     CONTINUE_EXT_FUNC_CODE,
-                                     ExtData[0], &ExtData[1]) == GIF_ERROR)
-              return (0);
-        }
-        break;
-
-      case TERMINATE_RECORD_TYPE:
-        break;
-
-      default:    /* Should be trapped by DGifGetRecordType */
-        break;
-    }
-  } while (RecordType != TERMINATE_RECORD_TYPE);
-
-  /* Sanity check for corrupted file */
-  if (GifFile->ImageCount == 0) {
-    GifFile->Error = D_GIF_ERR_NO_IMAG_DSCR;
-    return (0);
-  }
-
-  return 0;
-}
-
-
-// Read a .gif file and convert it to a "xpm" format.
+/* gif2ras.c - Converts from a Compuserve GIF (tm) image to a Sun Raster image.
+ *
+ * Copyright (c) 1988 by Patrick J. Naughton
+ *
+ * Author: Patrick J. Naughton
+ * naughton@wind.sun.com
+ *
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and that
+ * both that copyright notice and this permission notice appear in
+ * supporting documentation.
+ *
+ * This file is provided AS IS with no warranties of any kind.  The author
+ * shall have no liability with respect to the infringement of copyrights,
+ * trade secrets or any patents by this file or any part thereof.  In no
+ * event will the author be liable for any lost revenue or profits or
+ * other special, indirect and consequential damages.
+ *
+ * Comments and additions should be sent to the author:
+ *
+ *                     Patrick J. Naughton
+ *                     Sun Microsystems, Inc.
+ *                     2550 Garcia Ave, MS 14-40
+ *                     Mountain View, CA 94043
+ *                     (415) 336-1080
+ */
 
 typedef unsigned char uchar;
+
+#define NEXTBYTE (uchar)getc(GifFile)
+#define GETSHORT(var) var = NEXTBYTE; var += NEXTBYTE << 8
 
 /**
  The constructor loads the named GIF image.
@@ -166,108 +91,261 @@ typedef unsigned char uchar;
  GIF format could not be decoded, and ERR_NO_IMAGE if the image could not
  be loaded for another reason.
  */
-Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0),
-  _anim(false),
-  gif_handle(0) {
-  load(infname);
-}
+Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0) {
+  FILE *GifFile;	// File to read
+  char **new_data;	// Data array
 
-Fl_GIF_Image::Fl_GIF_Image(const char *infname, bool anim) : Fl_Pixmap((char *const*)0),
-  _anim(anim),
-  gif_handle(0) {
-  load(infname);
-}
-
-Fl_GIF_Image::Fl_GIF_Image() : Fl_Pixmap((char *const*)0),
-  gif_handle(0) {
-}
-
-bool Fl_GIF_Image::load(const char *infname) {
-  close_gif_file();
-
-  // as load() can be called multiple times
-  // we have to replicate the actions of the pixmap destructor here
-  uncache();
-  if (alloc_data) {
-    for (int i = 0; i < count(); i ++) delete[] (char *)data()[i];
-    delete[] (char **)data();
-  }
-  alloc_data = 0;
-  w(0);
-  h(0);
-
-  GifFileType *gifFileIn;
-  int errorCode;
-  if (!infname || (gifFileIn = DGifOpenFileName(infname, &errorCode)) == NULL) {
-    Fl::error("Fl_GIF_Image: Unable to open %s!\n", infname);
+  if ((GifFile = fl_fopen(infname, "rb")) == NULL) {
+    Fl::error("Fl_GIF_Image: Unable to open %s!", infname);
     ld(ERR_FILE_ACCESS);
-    return false;
+    return;
   }
-  // read first image
-  SavedImage *image = DGifSlurpImage(gifFileIn);
-  if (!image) {
-    Fl::error("Fl_GIF_Image %s: %s\n", infname, GifErrorString(errorCode));
-    DGifCloseFile(gifFileIn, &errorCode);
-    ld(ERR_FORMAT);
-    return false;
-  }
-  int Width = gifFileIn->SWidth;
-  int Height = gifFileIn->SHeight;
-  GifImageDesc *id = &image->ImageDesc;
-  ColorMapObject *ColorMap = id->ColorMap ? id->ColorMap : gifFileIn->SColorMap;
-  uchar *Image = image->RasterBits;
-  Width = id->Width; // overwrite canvas size
-  Height = id->Height; // with size of first image
-  if (_anim) {
-    // make a copy of the raster data because we modify them
-    // (but for animated gif we need to keep the original)
-    Image = new uchar[Width * Height];
-    memcpy(Image, image->RasterBits, Width * Height);
-  }
-  int HasColormap = ColorMap != 0;
-  int ColorMapSize = ColorMap ? ColorMap->ColorCount : 0;
-  // TODO: checks needed for (not) using 'colors' in image above ColorMapSize?
-  //       (this was also not done in original FLTK 1.3.4 implementation)
 
-  // Read in colormap:
+  {char b[6];
+  if (fread(b,1,6,GifFile)<6) {
+    fclose(GifFile);
+    ld(ERR_FILE_ACCESS);
+    return; /* quit on eof */
+  }
+  if (b[0]!='G' || b[1]!='I' || b[2] != 'F') {
+    fclose(GifFile);
+    Fl::error("Fl_GIF_Image: %s is not a GIF file.\n", infname);
+    ld(ERR_FORMAT);
+    return;
+  }
+  if (b[3]!='8' || b[4]>'9' || b[5]!= 'a')
+    Fl::warning("%s is version %c%c%c.",infname,b[3],b[4],b[5]);
+  }
+
+  int Width; GETSHORT(Width);
+  int Height; GETSHORT(Height);
+
+  uchar ch = NEXTBYTE;
+  char HasColormap = ((ch & 0x80) != 0);
+  int BitsPerPixel = (ch & 7) + 1;
+  int ColorMapSize;
+  if (HasColormap) {
+    ColorMapSize = 2 << (ch & 7);
+  } else {
+    ColorMapSize = 0;
+  }
+  // int OriginalResolution = ((ch>>4)&7)+1;
+  // int SortedTable = (ch&8)!=0;
+  ch = NEXTBYTE; // Background Color index
+  ch = NEXTBYTE; // Aspect ratio is N/64
+
+  // Read in global colormap:
   uchar transparent_pixel = 0;
   char has_transparent = 0;
   uchar Red[256], Green[256], Blue[256]; /* color map */
   if (HasColormap) {
-    for (int i=0; i < ColorMapSize; i++) {
-      Red[i] = ColorMap->Colors[i].Red;
-      Green[i] = ColorMap->Colors[i].Green;
-      Blue[i] = ColorMap->Colors[i].Blue;
-    }
-  } else {
-    Fl::error("%s does not have a colormap.\n", infname);
-    DGifCloseFile(gifFileIn, &errorCode);
-    ld(ERR_FORMAT);
-    return false;
-  }
-  GraphicsControlBlock gcb = {};
-  gcb.TransparentColor = NO_TRANSPARENT_COLOR;
-  int e = image->ExtensionBlockCount;
-  while (e--) {
-    ExtensionBlock *ext = &image->ExtensionBlocks[e];
-    if (ext->Function == GRAPHICS_EXT_FUNC_CODE) {
-      DGifExtensionToGCB(ext->ByteCount,ext->Bytes,&gcb);
-      break;
+    for (int i=0; i < ColorMapSize; i++) {	
+      Red[i] = NEXTBYTE;
+      Green[i] = NEXTBYTE;
+      Blue[i] = NEXTBYTE;
     }
   }
-  if (gcb.TransparentColor != NO_TRANSPARENT_COLOR) {
-    has_transparent = 1;
-    transparent_pixel = gcb.TransparentColor;
+
+  int CodeSize;		/* Code size, init from GIF header, increases... */
+  char Interlace;
+
+  for (;;) {
+
+    int i = NEXTBYTE;
+    if (i<0) {
+      fclose(GifFile);
+      Fl::error("Fl_GIF_Image: %s - unexpected EOF",infname); 
+      w(0); h(0); d(0); ld(ERR_FORMAT);
+      return;
+    }
+    int blocklen;
+
+    //  if (i == 0x3B) return 0;  eof code
+
+    if (i == 0x21) {		// a "gif extension"
+
+      ch = NEXTBYTE;
+      blocklen = NEXTBYTE;
+
+      if (ch==0xF9 && blocklen==4) { // Netscape animation extension
+
+	char bits;
+	bits = NEXTBYTE;
+	getc(GifFile); getc(GifFile); // GETSHORT(delay);
+	transparent_pixel = NEXTBYTE;
+	if (bits & 1) has_transparent = 1;
+	blocklen = NEXTBYTE;
+
+      } else if (ch == 0xFF) { // Netscape repeat count
+	;
+
+      } else if (ch != 0xFE) { //Gif Comment
+	Fl::warning("%s: unknown gif extension 0x%02x.", infname, ch);
+      }
+    } else if (i == 0x2c) {	// an image
+
+      ch = NEXTBYTE; ch = NEXTBYTE; // GETSHORT(x_position);
+      ch = NEXTBYTE; ch = NEXTBYTE; // GETSHORT(y_position);
+      GETSHORT(Width);
+      GETSHORT(Height);
+      ch = NEXTBYTE;
+      Interlace = ((ch & 0x40) != 0);
+      if (ch & 0x80) { // image has local color table
+	BitsPerPixel = (ch & 7) + 1;
+	ColorMapSize = 2 << (ch & 7);
+	for (i=0; i < ColorMapSize; i++) {
+	  Red[i] = NEXTBYTE;
+	  Green[i] = NEXTBYTE;
+	  Blue[i] = NEXTBYTE;
+	}
+      }
+      CodeSize = NEXTBYTE+1;
+      break; // okay, this is the image we want
+    } else {
+      Fl::warning("%s: unknown gif code 0x%02x", infname, i);
+      blocklen = 0;
+    }
+
+    // skip the data:
+    while (blocklen>0) {while (blocklen--) {ch = NEXTBYTE;} blocklen=NEXTBYTE;}
+  }
+
+  if (BitsPerPixel >= CodeSize)
+  {
+    // Workaround for broken GIF files...
+    BitsPerPixel = CodeSize - 1;
+    ColorMapSize = 1 << BitsPerPixel;
+  }
+
+  // Fix images w/o color table. The standard allows this and lets the
+  // decoder choose a default color table. The standard recommends the
+  // first two color table entries should be black and white.
+
+  if (ColorMapSize == 0) { // no global and no local color table
+    Fl::warning("%s does not have a color table, using default.\n", infname);
+    BitsPerPixel = CodeSize - 1;
+    ColorMapSize = 1 << BitsPerPixel;
+    Red[0] = Green[0] = Blue[0] = 0;	// black
+    Red[1] = Green[1] = Blue[1] = 255;	// white
+    printf("%s: ColorMapSize: %d, CodeSize: %d, BitsPerPixel: %d\n", infname, ColorMapSize, CodeSize, BitsPerPixel);
+    for (int i = 2; i < ColorMapSize; i++) {
+      Red[i] = Green[i] = Blue[i] = (uchar)(255 * i / (ColorMapSize - 1));
+    }
+#if (0)
+    // fill color table to maximum size
+    for (int i = ColorMapSize; i < 256; i++) {
+      Red[i] = Green[i] = Blue[i] = 0; // black
+    }
+#endif
+  }
+
+  uchar *Image = new uchar[Width*Height];
+
+  int YC = 0, Pass = 0; /* Used to de-interlace the picture */
+  uchar *p = Image;
+  uchar *eol = p+Width;
+
+  int InitCodeSize = CodeSize;
+  int ClearCode = (1 << (CodeSize-1));
+  int EOFCode = ClearCode + 1;
+  int FirstFree = ClearCode + 2;
+  int FinChar = 0;
+  int ReadMask = (1<<CodeSize) - 1;
+  int FreeCode = FirstFree;
+  int OldCode = ClearCode;
+
+  // tables used by LZW decompresser:
+  short int Prefix[4096];
+  uchar Suffix[4096];
+
+  int blocklen = NEXTBYTE;
+  uchar thisbyte = NEXTBYTE; blocklen--;
+  int frombit = 0;
+
+  for (;;) {
+
+/* Fetch the next code from the raster data stream.  The codes can be
+ * any length from 3 to 12 bits, packed into 8-bit bytes, so we have to
+ * maintain our location as a pointer and a bit offset.
+ * In addition, gif adds totally useless and annoying block counts
+ * that must be correctly skipped over. */
+    int CurCode = thisbyte;
+    if (frombit+CodeSize > 7) {
+      if (blocklen <= 0) {
+	blocklen = NEXTBYTE;
+	if (blocklen <= 0) break;
+      }
+      thisbyte = NEXTBYTE; blocklen--;
+      CurCode |= thisbyte<<8;
+    }
+    if (frombit+CodeSize > 15) {
+      if (blocklen <= 0) {
+	blocklen = NEXTBYTE;
+	if (blocklen <= 0) break;
+      }
+      thisbyte = NEXTBYTE; blocklen--;
+      CurCode |= thisbyte<<16;
+    }
+    CurCode = (CurCode>>frombit)&ReadMask;
+    frombit = (frombit+CodeSize)%8;
+
+    if (CurCode == ClearCode) {
+      CodeSize = InitCodeSize;
+      ReadMask = (1<<CodeSize) - 1;
+      FreeCode = FirstFree;
+      OldCode = ClearCode;
+      continue;
+    }
+
+    if (CurCode == EOFCode) break;
+
+    uchar OutCode[1025]; // temporary array for reversing codes
+    uchar *tp = OutCode;
+    int i;
+    if (CurCode < FreeCode) i = CurCode;
+    else if (CurCode == FreeCode) {*tp++ = (uchar)FinChar; i = OldCode;}
+    else {Fl::error("Fl_GIF_Image: %s - LZW Barf!", infname); break;}
+
+    while (i >= ColorMapSize) {*tp++ = Suffix[i]; i = Prefix[i];}
+    *tp++ = FinChar = i;
+    do {
+      *p++ = *--tp;
+      if (p >= eol) {
+	if (!Interlace) YC++;
+	else switch (Pass) {
+	case 0: YC += 8; if (YC >= Height) {Pass++; YC = 4;} break;
+	case 1: YC += 8; if (YC >= Height) {Pass++; YC = 2;} break;
+	case 2: YC += 4; if (YC >= Height) {Pass++; YC = 1;} break;
+	case 3: YC += 2; break;
+	}
+	if (YC>=Height) YC=0; /* cheap bug fix when excess data */
+	p = Image + YC*Width;
+	eol = p+Width;
+      }
+    } while (tp > OutCode);
+
+    if (OldCode != ClearCode) {
+      Prefix[FreeCode] = (short)OldCode;
+      Suffix[FreeCode] = FinChar;
+      FreeCode++;
+      if (FreeCode > ReadMask) {
+	if (CodeSize < 12) {
+	  CodeSize++;
+	  ReadMask = (1 << CodeSize) - 1;
+	}
+	else FreeCode--;
+      }
+    }
+    OldCode = CurCode;
   }
 
   // We are done reading the file, now convert to xpm:
+
+  // allocate line pointer arrays:
   w(Width);
   h(Height);
   d(1);
-
-  // allocate line pointer arrays:
-  char **new_data = new char*[Height+2]; // Data array
-  uchar *p;
+  new_data = new char*[Height+2];
 
   // transparent pixel must be zero, swap if it isn't:
   if (has_transparent && transparent_pixel != 0) {
@@ -292,8 +370,7 @@ bool Fl_GIF_Image::load(const char *infname) {
   }
 
   // find out what colors are actually used:
-  uchar used[256];
-  uchar remap[256];
+  uchar used[256]; uchar remap[256];
   int i;
   for (i = 0; i < ColorMapSize; i++) used[i] = 0;
   p = Image+Width*Height;
@@ -303,33 +380,32 @@ bool Fl_GIF_Image::load(const char *infname) {
   int base = has_transparent && used[0] ? ' ' : ' '+1;
   int numcolors = 0;
   for (i = 0; i < ColorMapSize; i++) if (used[i]) {
-      remap[i] = (uchar)(base++);
-      numcolors++;
-    }
+    remap[i] = (uchar)(base++);
+    numcolors++;
+  }
 
-  // write the first line of xpm data:
-  char buf[100];
-  int length = snprintf(buf, sizeof(buf),
-                        "%d %d %d %d",Width,Height,-numcolors,1);
+  // write the first line of xpm data (use suffix as temp array):
+  int length = sprintf((char*)(Suffix),
+		       "%d %d %d %d",Width,Height,-numcolors,1);
   new_data[0] = new char[length+1];
-  strcpy(new_data[0], buf);
+  strcpy(new_data[0], (char*)Suffix);
 
   // write the colormap
   new_data[1] = (char*)(p = new uchar[4*numcolors]);
   for (i = 0; i < ColorMapSize; i++) if (used[i]) {
-      *p++ = remap[i];
-      *p++ = Red[i];
-      *p++ = Green[i];
-      *p++ = Blue[i];
-    }
+    *p++ = remap[i];
+    *p++ = Red[i];
+    *p++ = Green[i];
+    *p++ = Blue[i];
+  }
 
   // remap the image data:
   p = Image+Width*Height;
   while (p-- > Image) *p = remap[*p];
 
   // split the image data into lines:
-  for (i = 0; i < Height; i++) {
-    new_data[i + 2] = new char[Width+1];
+  for (i=0; i<Height; i++) {
+    new_data[i+2] = new char[Width+1];
     memcpy(new_data[i + 2], (char*)(Image + i*Width), Width);
     new_data[i + 2][Width] = 0;
   }
@@ -337,763 +413,22 @@ bool Fl_GIF_Image::load(const char *infname) {
   data((const char **)new_data, Height + 2);
   alloc_data = 1;
 
-  if (_anim) {
-    // free temporary raster data
-    delete[] Image;
-    // store file handle
-    gif_handle = gifFileIn;
-  } else
-    DGifCloseFile(gifFileIn, &errorCode);
-  return true;
+  delete[] Image;
+
+  fclose(GifFile);
 }
 
-/*virtual*/
-Fl_GIF_Image::~Fl_GIF_Image() {
-  close_gif_file();
-}
 
-void Fl_GIF_Image::close_gif_file() {
-  if (gif_handle) {
-    DGifCloseFile((GifFileType *)gif_handle, 0);
-    gif_handle = 0;
-  }
-}
-
-void *Fl_GIF_Image::read_next_image() {
-  SavedImage *s = 0;
-  if (gif_handle) {
-    s = DGifSlurpImage((GifFileType *)gif_handle);
-  }
-  return s;
+Fl_GIF_Image::Fl_GIF_Image() : Fl_Pixmap((char *const*)0) {
 }
 
 //
-// Fl_Anim_GIF_Image implementation as extension of Fl_GIF_Image
+// NOTE: Fl_Anim_GIF_Image should be a seperate compilation unit,
+//       but this requires a change of the build process (Makefile).
+//       As long as this is not done, the unit is included here..
 //
-
-#include <FL/Fl_Anim_GIF_Image.H>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <FL/Fl_RGB_Image.H>
-#include <FL/Fl.H>
-
-/*static*/
-double Fl_Anim_GIF_Image::min_delay = 0.;
+#include "Fl_Anim_GIF_Image.cxx"
 
 //
-//  Internal helper classes/structs
-//
-
-namespace {
-enum Transparency {
-  T_NONE = 0xff,
-  T_FULL = 0
-};
-
-struct RGBA_Color {
-  uchar r, g, b, alpha;
-  RGBA_Color(uchar r_ = 0, uchar g_ = 0, uchar b_ = 0, uchar a_ = T_NONE) :
-    r(r_), g(g_), b(b_), alpha(a_) {}
-};
-}
-
-struct GifFrame {
-  GifFrame() :
-    rgb(0),
-    average_color(FL_BLACK),
-    average_weight(-1),
-    desaturated(false),
-    x(0),
-    y(0),
-    w(0),
-    h(0),
-    delay(0),
-    dispose(0),
-    transparent_color_index(-1) {}
-  Fl_RGB_Image *rgb;                       // full frame image
-  Fl_Color average_color;                  // last average color
-  float average_weight;                    // last average weight
-  bool desaturated;                        // flag if frame is desaturated
-  int x, y, w, h;                          // frame original dimensions
-  double delay;                            // delay (already converted to ms)
-  int dispose;                             // disposal method
-  int transparent_color_index;             // needed for dispose()
-  RGBA_Color transparent_color;            // needed for dispose()
-};
-
-struct FrameInfo {
-  FrameInfo() :
-    frames_size(0),
-    frames(0),
-    loop_count(1),
-    background_color_index(-1),
-    canvas_w(0),
-    canvas_h(0),
-    desaturate(false),
-    average_color(FL_BLACK),
-    average_weight(-1),
-    scaling((Fl_RGB_Scaling)0),
-    debug(false),
-    optimize_mem(false),
-    offscreen(0) {}
-  int frames_size;                         // number of frames stored in 'frames'
-  GifFrame *frames;                        // "vector" for frames
-  int loop_count;                          // loop count from file
-  int background_color_index;              // needed for dispose()
-  RGBA_Color background_color;             // needed for dispose()
-  GifFrame frame;                          // current processed frame
-  int canvas_w;                            // width of GIF from header
-  int canvas_h;                            // height of GIF from header
-  bool desaturate;                         // flag if frames should be desaturated
-  Fl_Color average_color;                  // color for color_average()
-  float average_weight;                    // weight for color_average (negative: none)
-  Fl_RGB_Scaling scaling;                  // saved scaling method for scale_frame()
-  bool debug;                              // Flag for debug outputs
-  bool optimize_mem;                       // Flag to store frames in original dimensions
-  uchar *offscreen;                        // internal "offscreen" buffer to build frames
-};
-
-#include <FL/Fl.H>         // for Fl::add_timeout()
-#include <FL/Fl_Group.H>   // for Fl_Group::parent()
-
-#define DEBUG(x) if ( _fi->debug ) printf x
-//#define DEBUG(x)
-
-static double convertDelay(FrameInfo *fi_, int d_) {
-  if (d_ <= 0)
-    d_ = fi_->loop_count != 1 ? 10 : 0;
-  return (double)d_ / 100;
-}
-
-#if 0
-// draw a transparent rgb image into the offscreen
-static void draw(Fl_RGB_Image &rgb_, uchar *offscreen_) {
-  const char *src = rgb_.data()[0];
-  const char *end = src + rgb_.w() * rgb_.h() * 4;
-  while (end > src) {
-    end -= 4;
-    if (end[3] == T_FULL) continue;
-    memcpy(&offscreen_[end - src], end, 4);
-  }
-}
-#endif
-
-// reset offscreen to background color
-static void setToBackGround(uchar *offscreen_, int frame_, FrameInfo *_fi) {
-  int bg = _fi->background_color_index;
-  int tp = frame_ >= 0 ?_fi->frames[frame_].transparent_color_index : bg;
-  DEBUG(("setToBackGround [%d] tp = %d, bg = %d\n", frame_, tp, bg));
-  RGBA_Color color = _fi->background_color;
-  if (tp >= 0)
-    color = _fi->frames[frame_].transparent_color;
-  if (tp >= 0 && bg >= 0)
-    bg = tp;
-  color.alpha = tp == bg ? T_FULL : tp < 0 ? T_FULL : T_NONE;
-  DEBUG(("  setToColor %d/%d/%d alpha=%d\n", color.r, color.g, color.b, color.alpha));
-  for (uchar *p = offscreen_ + _fi->canvas_w * _fi->canvas_h * 4 - 4; p >= offscreen_; p -= 4)
-    memcpy(p, &color, 4);
-}
-
-// dispose frame with index 'frame_' to offscreen buffer
-static void dispose(int frame_, FrameInfo *_fi, uchar *offscreen_) {
-  if (frame_ < 0) {
-    return;
-  }
-  switch (_fi->frames[frame_].dispose) {
-    case DISPOSE_PREVIOUS: {
-        // dispose to previous restores to first not DISPOSE_TO_PREVIOUS frame
-        int prev(frame_);
-        while (prev > 0 && _fi->frames[prev].dispose == DISPOSE_PREVIOUS)
-          prev--;
-        if (prev == 0 && _fi->frames[prev].dispose == DISPOSE_PREVIOUS) {
-          setToBackGround(offscreen_, -1, _fi);
-          return;
-        }
-        DEBUG(("     dispose frame %d to previous frame %d\n", frame_ + 1, prev + 1));
-        // copy the previous image data..
-        uchar *dst = offscreen_;
-        const char *src = _fi->frames[prev].rgb->data()[0];
-        memcpy((char *)dst, (char *)src, _fi->canvas_w * _fi->canvas_h * 4);
-        break;
-      }
-    case DISPOSE_BACKGROUND:
-      DEBUG(("     dispose frame %d to background\n", frame_ + 1));
-      setToBackGround(offscreen_, frame_, _fi);
-      break;
-
-    default: {
-        // nothing to do (keep everything as is)
-        break;
-      }
-  }
-}
-
-Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
-                                     Fl_Widget *canvas_/* = 0*/,
-                                     unsigned short flags_/* = 0 */) :
-  Inherited(name_, true),
-  _name(0),
-  _canvas(canvas_),
-  _uncache(false),
-  _valid(false),
-  _frame(-1),
-  _speed(1),
-  _fi(new FrameInfo()) {
-  if (w() <= 0 || h() <= 0) {
-    return; // failed to load in base class
-  }
-  _fi->debug = (flags_ & Debug);
-  _fi->optimize_mem = (flags_ & OptimizeMemory);
-  load(name_);
-  if (canvas_w() && canvas_h()) {
-    if (!w() && !h()) {
-      w(canvas_w());
-      h(canvas_h());
-    }
-  }
-  canvas(canvas_, flags_);
-  if ((flags_ & Start))
-    start();
-}
-
-Fl_Anim_GIF_Image::Fl_Anim_GIF_Image() :
-  Inherited(),
-  _name(0),
-  _canvas(0),
-  _uncache(false),
-  _valid(false),
-  _frame(-1),
-  _speed(1),
-  _fi(new FrameInfo()) {
-}
-
-/*virtual*/
-Fl_Anim_GIF_Image::~Fl_Anim_GIF_Image() {
-  Fl::remove_timeout(cb_animate, this);
-  clear_frames();
-  free(_fi->offscreen);
-  delete _fi;
-  free(_name);
-}
-
-bool Fl_Anim_GIF_Image::start() {
-  Fl::remove_timeout(cb_animate, this);
-  if (_fi->frames_size) {
-    next_frame();
-  }
-  return _fi->frames_size != 0;
-}
-
-bool Fl_Anim_GIF_Image::stop() {
-  Fl::remove_timeout(cb_animate, this);
-  return _fi->frames_size != 0;
-}
-
-void Fl_Anim_GIF_Image::clear_frames() {
-  while (_fi->frames_size--) {
-    delete _fi->frames[_fi->frames_size].rgb;
-  }
-  free(_fi->frames);
-  _fi->frames = 0;
-  _fi->frames_size = 0;
-  _valid = false;
-}
-
-// add a frame to the "vector" in FrameInfo
-static bool push_back_frame(FrameInfo *fi_, GifFrame *frame_) {
-  void *tmp = realloc(fi_->frames, sizeof(GifFrame) * (fi_->frames_size + 1));
-  if (!tmp) {
-    return false;
-  }
-  fi_->frames = (GifFrame *)tmp;
-  memcpy(&fi_->frames[ fi_->frames_size ], frame_, sizeof(GifFrame));
-  fi_->frames_size++;
-  return true;
-}
-
-void Fl_Anim_GIF_Image::scale_frame() {
-  int i(_frame);
-  if (i < 0)
-    return;
-  Fl_RGB_Scaling scaling = Fl_Image::RGB_scaling();
-  int new_w = _fi->optimize_mem ? _fi->frames[i].w : _fi->canvas_w;
-  int new_h = _fi->optimize_mem ? _fi->frames[i].h : _fi->canvas_h;
-  if (_fi->frames[i].rgb->w() == new_w && _fi->frames[i].rgb->h() == new_h)
-    return;
-  Fl_Image::RGB_scaling(_fi->scaling);
-  Fl_RGB_Image *copied = (Fl_RGB_Image *)_fi->frames[i].rgb->copy(new_w, new_h);
-  delete _fi->frames[i].rgb;
-  _fi->frames[i].rgb = copied;
-  Fl_Image::RGB_scaling(scaling);
-}
-
-void Fl_Anim_GIF_Image::set_frame(int frame_) {
-  int last_frame = _frame;
-  _frame = frame_;
-  // NOTE: uncaching decreases performance, but saves a lot of memory
-  if (_uncache && this->image())
-    this->image()->uncache();
-
-  // scaling pending?
-  scale_frame();
-
-  // color average pending?
-  if (_fi->average_weight >= 0 && _fi->average_weight < 1 &&
-      ((_fi->average_color != _fi->frames[_frame].average_color) ||
-       (_fi->average_weight != _fi->frames[_frame].average_weight))) {
-    _fi->frames[_frame].rgb->color_average(_fi->average_color, _fi->average_weight);
-    _fi->frames[_frame].average_color = _fi->average_color;
-    _fi->frames[_frame].average_weight = _fi->average_weight;
-  }
-
-  // desaturate pending?
-  if (_fi->desaturate && !_fi->frames[_frame].desaturated) {
-    _fi->frames[_frame].rgb->desaturate();
-    _fi->frames[_frame].desaturated = true;
-  }
-  if (canvas()) {
-    if ((last_frame >= 0 && (_fi->frames[last_frame].dispose == DISPOSE_BACKGROUND ||
-        _fi->frames[last_frame].dispose == DISPOSE_PREVIOUS)) ||
-        (_frame == 0 )) {
-      if (canvas()->parent()) {
-        canvas()->parent()->redraw();
-      } else {
-        canvas()->redraw();
-      }
-    } else {
-      canvas()->redraw();
-    }
-  }
-}
-
-bool Fl_Anim_GIF_Image::next_frame() {
-  int frame(_frame);
-  frame++;
-  if (frame >= _fi->frames_size)
-    frame = 0;
-  if (frame >= _fi->frames_size)
-    return false;
-  set_frame(frame);
-  double delay = _fi->frames[frame].delay;
-  if (_fi->loop_count !=1 && min_delay && delay < min_delay) {
-    DEBUG(("#%d: correct delay %f => %f\n", frame, delay, min_delay));
-    delay = min_delay;
-  }
-  if (is_animated() && delay > 0 && _speed > 0) {  // normal GIF has no delay
-    delay /= _speed;
-    Fl::add_timeout(delay, cb_animate, this);
-  }
-  return true;
-}
-
-/*virtual*/
-void Fl_Anim_GIF_Image::draw(int x_, int y_, int w_, int h_, int cx_/* = 0*/, int cy_/* = 0*/) {
-  if (this->image()) {
-    if (_fi->optimize_mem) {
-      int f0 = _frame;
-      while (f0 > 0 && !(_fi->frames[f0].x == 0 && _fi->frames[f0].y == 0 &&
-                       _fi->frames[f0].w == w() && _fi->frames[f0].h == h()))
-        --f0;
-      for (int f = f0; f <= _frame; f++) {
-        if (f < _frame && _fi->frames[f].dispose == DISPOSE_PREVIOUS) continue;
-        if (f < _frame && _fi->frames[f].dispose == DISPOSE_BACKGROUND) continue;
-        Fl_RGB_Image *rgb = _fi->frames[f].rgb;
-        if (rgb) {
-          rgb->draw(x_ + _fi->frames[f].x, y_ + _fi->frames[f].y, w_, h_, cx_, cy_);
-        }
-      }
-    }
-    else {
-      this->image()->draw(x_, y_, w_, h_, cx_, cy_);
-    }
-  } else {
-    // Note: should the base class be called here?
-    //       If it is, then the copy() method must also
-    //       copy the base image!
-//    Inherited::draw(x_, y_, w_, h_, cx_, cy_);
-  }
-}
-
-bool Fl_Anim_GIF_Image::load(const char *name_) {
-  DEBUG(("\nFl_Anim_GIF_Image::load '%s'\n", name_));
-  clear_frames();
-  free(_name);
-  _name = name_ ? strdup(name_) : 0;
-  _anim = true;
-  if (!Inherited::load(name_))
-    return false;
-  GifFileType *gifFileIn = (GifFileType *)gif_handle;
-  DEBUG(("%d x %d  BG=%d aspect %d\n", gifFileIn->SWidth, gifFileIn->SHeight, gifFileIn->SBackGroundColor, gifFileIn->AspectByte));
-  _fi->canvas_w = gifFileIn->SWidth;
-  _fi->canvas_h = gifFileIn->SHeight;
-  w(_fi->canvas_w);
-  h(_fi->canvas_h);
-  free(_fi->offscreen);
-  _frame = -1;
-  _fi->offscreen = (uchar *)calloc(_fi->canvas_w * _fi->canvas_h * 4, 1);
-  _fi->background_color_index = gifFileIn->SColorMap ? gifFileIn->SBackGroundColor : -1;
-  if (_fi->background_color_index >= 0) {
-    _fi->background_color = RGBA_Color(
-                              gifFileIn->SColorMap->Colors[_fi->background_color_index].Red,
-                              gifFileIn->SColorMap->Colors[_fi->background_color_index].Green,
-                              gifFileIn->SColorMap->Colors[_fi->background_color_index].Blue);
-  }
-
-  DEBUG(("images: %d\n", gifFileIn->ImageCount));
-
-  // process all frames
-  GraphicsControlBlock gcb = {};
-  gcb.TransparentColor = NO_TRANSPARENT_COLOR;
-  SavedImage *image = &gifFileIn->SavedImages[0];
-  while (image) {
-    GifFrame &frame = _fi->frame;
-    GifImageDesc *id = &image->ImageDesc;
-
-    ColorMapObject *ColorMap = id->ColorMap ? id->ColorMap : gifFileIn->SColorMap;
-    frame.x = id->Left;
-    frame.y = id->Top;
-    frame.w = id->Width;
-    frame.h = id->Height;
-    frame.delay = 0;
-    frame.transparent_color_index = -1;
-    int e = image->ExtensionBlockCount;
-    while (e--) {
-      ExtensionBlock *ext = &image->ExtensionBlocks[ e ];
-      if (_frame < 0 && ext->Function == APPLICATION_EXT_FUNC_CODE &&
-          ext->ByteCount >= 11 && memcmp(ext->Bytes, "NETSCAPE2.0", 11) == 0) {
-        ExtensionBlock *subext = &image->ExtensionBlocks[ e + 1 ];
-        if (subext->ByteCount >= 3) {
-          unsigned char *params = subext->Bytes;
-          _fi->loop_count = params[1] | (params[2] << 8);
-          DEBUG(("netscape loop count: %u\n", _fi->loop_count));
-        }
-      } else if (ext->Function == GRAPHICS_EXT_FUNC_CODE) {
-        DGifExtensionToGCB(ext->ByteCount, ext->Bytes, &gcb);
-        DEBUG(("#%d %d/%d %dx%d delay: %d, dispose: %d transparent_color: %d\n",
-               (int)_fi->frames_size + 1,
-               frame.x, frame.y, frame.w, frame.h,
-               gcb.DelayTime, gcb.DisposalMode, gcb.TransparentColor));
-        frame.dispose = gcb.DisposalMode;
-        if (_frame >= 0)
-          break;
-      }
-    }
-    if (!ColorMap) {
-      // TODO: use same fix as in first image!?
-      Fl::error("Fl_Anim_Gif_Image '%s' does not have a colormap", name_);
-      close_gif_file();
-      return false;
-    }
-    frame.delay = convertDelay(_fi, gcb.DelayTime);
-
-    // we know now everything we need about the frame..
-    frame.transparent_color_index = gcb.TransparentColor;
-    if (frame.transparent_color_index >= 0)
-      frame.transparent_color = RGBA_Color(
-                                  ColorMap->Colors[frame.transparent_color_index].Red,
-                                  ColorMap->Colors[frame.transparent_color_index].Green,
-                                  ColorMap->Colors[frame.transparent_color_index].Blue);
-
-    dispose(_frame, _fi, _fi->offscreen);
-
-    // copy image data to offscreen
-    uchar *bits = image->RasterBits;
-    for (int y = frame.y; y < frame.y + frame.h; y++) {
-      for (int x = frame.x; x < frame.x + frame.w; x++) {
-        uchar c = *bits++;
-        if (c == gcb.TransparentColor)
-          continue;
-        uchar *buf = _fi->offscreen;
-        buf += (y * w() * 4 + (x * 4));
-        *buf++ = ColorMap->Colors[c].Red;
-        *buf++ = ColorMap->Colors[c].Green;
-        *buf++ = ColorMap->Colors[c].Blue;
-        *buf = T_NONE;
-      }
-    }
-    // create RGB image from offscreen
-    if (_fi->optimize_mem) {
-      uchar *buf = new uchar[frame.w * frame.h * 4];
-      uchar *dest = buf;
-      for (int y = frame.y; y < frame.y + frame.h; y++) {
-        for (int x = frame.x; x < frame.x + frame.w; x++) {
-          memcpy(dest, &_fi->offscreen[y * w() * 4 + x * 4], 4);
-          dest += 4;
-        }
-      }
-      frame.rgb = new Fl_RGB_Image(buf, frame.w, frame.h, 4);
-    }
-    else {
-      uchar *buf = new uchar[w() * h() * 4];
-      memcpy(buf, _fi->offscreen, w() * h() * 4);
-      frame.rgb = new Fl_RGB_Image(buf, w(), h(), 4);
-    }
-    frame.rgb->alloc_array = 1;
-
-    if (!push_back_frame(_fi, &frame)) {
-      close_gif_file();
-      return false;
-    }
-
-    // free compressed data to save memory
-    free(image->RasterBits);
-    image->RasterBits = 0;
-    image = (SavedImage *)read_next_image();
-    _frame++;
-  }
-  close_gif_file();
-  _valid = true;
-  _frame = -1;
-  memset(_fi->offscreen, 0, w() * h() * 4);
-  return _valid;
-} // load
-
-Fl_Widget *Fl_Anim_GIF_Image::canvas() const {
-  return _canvas;
-}
-
-void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, unsigned short flags_/* = 0*/) {
-  if (_canvas)
-    _canvas->image(0);
-  _canvas = canvas_;
-  if (_canvas && !(flags_ & DontSetAsImage))
-    _canvas->image(this); // set animation as image() of canvas
-  if (_canvas && !(flags_ & DontResizeCanvas))
-    _canvas->size(w(), h());
-
-  // Note: 'Start' flag is *NOT* used here,
-  //       but an already running animation is restarted.
-  _frame = -1;
-  if (Fl::has_timeout(cb_animate, this)) {
-    Fl::remove_timeout(cb_animate, this);
-    next_frame();
-  }
-}
-
-int Fl_Anim_GIF_Image::canvas_w() const {
-  return _fi->canvas_w;
-}
-
-int Fl_Anim_GIF_Image::canvas_h() const {
-  return _fi->canvas_h;
-}
-
-double Fl_Anim_GIF_Image::delay(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].delay;
-  return 0.;
-}
-
-void Fl_Anim_GIF_Image::delay(int frame_, double delay_) {
-  if (frame_ >= 0 && frame_ < frames())
-    _fi->frames[frame_].delay = delay_;
-}
-
-int Fl_Anim_GIF_Image::frames() const {
-  return _fi->frames_size;
-}
-
-int Fl_Anim_GIF_Image::frame() const {
-  return _frame;
-}
-
-void Fl_Anim_GIF_Image::frame(int frame_) {
-  if (Fl::has_timeout(cb_animate, this)) {
-    Fl::warning("Fl_Anim_GIF_Image::frame(%d): not idle!", frame_);
-    return;
-  }
-  if (frame_ >= 0 && frame_ < frames()) {
-    set_frame(frame_);
-  }
-  else {
-    Fl::warning("Fl_Anim_GIF_Image::frame(%d): out of range!", frame_);
-  }
-}
-
-void Fl_Anim_GIF_Image::frame_uncache(bool uncache_) {
-  _uncache = uncache_;
-}
-
-bool Fl_Anim_GIF_Image::frame_uncache() const {
-  return _uncache;
-}
-
-Fl_Image *Fl_Anim_GIF_Image::image() const {
-  return _frame >= 0 && _frame < frames() ? _fi->frames[_frame].rgb : 0;
-}
-
-Fl_Image *Fl_Anim_GIF_Image::image(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].rgb;
-  return 0;
-}
-
-
-const char *Fl_Anim_GIF_Image::name() const {
-  return _name;
-}
-
-double Fl_Anim_GIF_Image::speed() const {
-  return _speed;
-}
-
-void Fl_Anim_GIF_Image::speed(double speed_) {
-  _speed = speed_;
-}
-
-bool Fl_Anim_GIF_Image::valid() const {
-  return _valid;
-}
-
-int Fl_Anim_GIF_Image::frame_x(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].x;
-  return -1;
-}
-
-int Fl_Anim_GIF_Image::frame_y(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].y;
-  return -1;
-}
-
-int Fl_Anim_GIF_Image::frame_w(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].w;
-  return -1;
-}
-
-int Fl_Anim_GIF_Image::frame_h(int frame_) const {
-  if (frame_ >= 0 && frame_ < frames())
-    return _fi->frames[frame_].h;
-  return -1;
-}
-
-/*static*/
-void Fl_Anim_GIF_Image::cb_animate(void *d_) {
-  Fl_Anim_GIF_Image *b = (Fl_Anim_GIF_Image *)d_;
-  b->next_frame();
-}
-
-/*virtual*/
-Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
-  Fl_Anim_GIF_Image *copied = new Fl_Anim_GIF_Image();
-  // copy/resize the base image (Fl_Pixmap)
-  // Note: this is not really necessary, if the draw()
-  //       method never calls the base class.
-  if (_fi->frames_size) {
-    w(_fi->frames[0].w);
-    h(_fi->frames[0].h);
-    Fl_Pixmap *gif = (Fl_Pixmap *)Inherited::copy(W_, H_);
-    copied->Inherited::data(gif->data(), gif->count());
-    copied->alloc_data = gif->alloc_data;
-    gif->alloc_data = 0;
-    delete gif;
-    w(_fi->canvas_w);
-    h(_fi->canvas_h);
-  }
-  // copy/resize the animated gif frames (Fl_RGB_Image array)
-  double scale_factor_x = (double)W_ / (double)w();
-  double scale_factor_y = (double)H_ / (double)h();
-  for (int i = 0; i < _fi->frames_size; i++) {
-    if (!push_back_frame(copied->_fi, &_fi->frames[i])) {
-      break;
-    }
-    if (_fi->optimize_mem) {
-      copied->_fi->frames[i].x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
-      copied->_fi->frames[i].y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
-      int new_w = (int)((double)_fi->frames[i].w * scale_factor_x + .5);
-      int new_h = (int)((double)_fi->frames[i].h * scale_factor_y + .5);
-      copied->_fi->frames[i].w = new_w;
-      copied->_fi->frames[i].h = new_h;
-    }
-    // just copy data 1:1 now - scaling will be done adhoc when frame is displayed
-    copied->_fi->frames[i].rgb = (Fl_RGB_Image *)_fi->frames[i].rgb->copy();
-  }
-  copied->w(W_);
-  copied->h(H_);
-  copied->_fi->canvas_w = W_;
-  copied->_fi->canvas_h = H_;
-  copied->_fi->optimize_mem = _fi->optimize_mem;
-  copied->_fi->scaling = Fl_Image::RGB_scaling(); // save current scaling mode
-  copied->_fi->loop_count = _fi->loop_count; // .. and the loop count!
-  copied->_uncache = _uncache; // copy 'inherits' frame uncache status
-  copied->_valid = _valid && copied->_fi->frames_size == _fi->frames_size;
-  scale_frame(); // scale current frame now
-  if (copied->_valid && _frame >= 0 && !Fl::has_timeout(cb_animate, copied))
-    copied->start(); // start if original also was started
-  return copied;
-}
-
-Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(int W_, int H_) {
-  int W(W_);
-  int H(H_);
-  if (_canvas && !W && !H) {
-    W = _canvas->w();
-    H = _canvas->h();
-  }
-  if (!W || !H || ((W == w() && H == h()))) {
-    return *this;
-  }
-  double scale_factor_x = (double)W / (double)w();
-  double scale_factor_y = (double)H / (double)h();
-  for (int i=0; i < _fi->frames_size; i++) {
-    if (_fi->optimize_mem) {
-      _fi->frames[i].x = (int)((double)_fi->frames[i].x * scale_factor_x + .5);
-      _fi->frames[i].y = (int)((double)_fi->frames[i].y * scale_factor_y + .5);
-      int new_w = (int)((double)_fi->frames[i].w * scale_factor_x + .5);
-      int new_h = (int)((double)_fi->frames[i].h * scale_factor_y + .5);
-      _fi->frames[i].w = new_w;
-      _fi->frames[i].h = new_h;
-    }
-  }
-  w(W);
-  h(H);
-  _fi->canvas_w = w();
-  _fi->canvas_h = h();
-  _fi->scaling = Fl_Image::RGB_scaling(); // save current scaling mode
-  scale_frame(); // scale current frame now
-  if (_canvas) {
-    _canvas->size(w(), h());
-  }
-  return *this;
-}
-
-Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(double scale_) {
-  return resize(lround((double)w() * scale_), lround((double)h() * scale_));
-}
-
-/*virtual*/
-void Fl_Anim_GIF_Image::color_average(Fl_Color c_, float i_) {
-  _fi->average_color = c_;
-  _fi->average_weight = i_;
-}
-
-/*virtual*/
-void Fl_Anim_GIF_Image::desaturate() {
-  _fi->desaturate = true;
-}
-
-/*virtual*/
-void Fl_Anim_GIF_Image::uncache() {
-  Inherited::uncache();
-  for (int i=0; i < _fi->frames_size; i++) {
-    if (_fi->frames[i].rgb) _fi->frames[i].rgb->uncache();
-  }
-}
-
-bool Fl_Anim_GIF_Image::is_animated() const {
-  return _valid && _fi->frames_size > 1;
-}
-
-/*static*/
-bool Fl_GIF_Image::is_animated(const char *name_) {
-  Fl_GIF_Image gif(name_, true);
-  if (gif.w() <= 0 || gif.h() <= 0) return false;
-  return gif.read_next_image(); // returns true if file has another frame
-}
-
-//
-// End of "$Id: Fl_GIF_Image.cxx 10751 2015-06-14 17:07:31Z AlbrechtS $".
+// End of "$Id$".
 //

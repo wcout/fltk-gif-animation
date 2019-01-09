@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # put the path to your FLTK repository here
-fltk=../fltk-1.4
+fltk=../fltk
 
 targets="animgifimage animgifimage-simple animgifimage-resize animgifimage-play"
 src=intern
@@ -23,6 +23,7 @@ if [ "$1" = "all" ]; then
 	cp -av $src/FL/*.H $fltk/FL/.
 	cp -av $src/src/*.cxx $fltk/src/.
 	cp -av $src/src/*.H $fltk/src/.
+	cp -av $src/src/*.h $fltk/src/.
 
 	cwd=$(pwd)
 	cd $fltk
