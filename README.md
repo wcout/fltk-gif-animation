@@ -49,6 +49,15 @@ of GIF's - also with non-conforming and 'bad' ones.
 
 Some test programs are included in both solutions.
 
+Both solutions offer roughly the same functionality:
+
+- `copy()`, `resize()` with fast image scaling with lazy (on-time) rescaling and usage
+  of FLTK's (from version 1.4) image scaling feature
+- `color_average()` and `desaturate()` methods
+- also it possible to run several instances of the _same_ animation simultaneously
+  and to use it as tiles in `Fl_Tiled_Image`
+- application controlled playback possible
+
 ## Building
 
 **[Note: instruction are for Linux]**
