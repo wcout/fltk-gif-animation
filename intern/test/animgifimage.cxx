@@ -30,7 +30,8 @@ static void set_title(Fl_Window *win_, Fl_Anim_GIF_Image *animgif_) {
 static void cb_forced_redraw(void *d_) {
   Fl_Window *win = Fl::first_window();
   while (win) {
-    win->redraw();
+    if (!win->menu_window())
+      win->redraw();
     win = Fl::next_window(win);
   }
   if (Fl::first_window())
