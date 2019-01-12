@@ -973,7 +973,7 @@ Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(int W_, int H_) {
   scale_frame(); // scale current frame now
   w(_fi->canvas_w);
   h(_fi->canvas_h);
-  if (_canvas && !_flags & DontResizeCanvas) {
+  if (_canvas && !(_flags & DontResizeCanvas)) {
     _canvas->size(w(), h());
   }
   return *this;
