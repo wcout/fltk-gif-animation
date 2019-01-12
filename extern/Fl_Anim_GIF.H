@@ -60,6 +60,9 @@ public:
    resources.
    */
   ~Fl_Anim_GIF();
+  void autoresize(bool autoresize);
+  bool autoresize() const { return _autoresize; }
+
   /**
    Return the width and height of the animation canvas as
    specified in the file header
@@ -209,6 +212,7 @@ protected:
   bool next_frame();
   void clear_frames();
   void set_frame(int frame_);
+  virtual void resize(int x_, int y_, int w_, int h_);
 private:
   static void cb_animate(void *d_);
   static void cb_gl_frame(void *ctx_, GIF_WHDR *whdr_);
@@ -227,6 +231,7 @@ private:
   bool _stopped;
   int _frame; // current frame
   double _speed;
+  bool _autoresize;
   FrameInfo *_fi;
 };
 

@@ -254,6 +254,7 @@ private:
   void scale_frame();
 private:
   char *_name;
+  unsigned short _flags;
   Fl_Widget *_canvas;
   bool _uncache;
   bool _valid;

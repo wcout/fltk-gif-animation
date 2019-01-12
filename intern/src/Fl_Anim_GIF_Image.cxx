@@ -570,6 +570,7 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
                                      unsigned short flags_/* = 0 */) :
   Inherited(),
   _name(name_ ? strdup(name_) : 0),
+  _flags(flags_),
   _canvas(canvas_),
   _uncache(false),
   _valid(false),
@@ -594,6 +595,7 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
 Fl_Anim_GIF_Image::Fl_Anim_GIF_Image() :
   Inherited(),
   _name(0),
+  _flags(0),
   _canvas(0),
   _uncache(false),
   _valid(false),
@@ -969,7 +971,9 @@ Fl_Anim_GIF_Image& Fl_Anim_GIF_Image::resize(int W_, int H_) {
   }
   _fi->resize(W, H);
   scale_frame(); // scale current frame now
-  if (_canvas) {
+  w(_fi->canvas_w);
+  h(_fi->canvas_h);
+  if (_canvas && !_flags & DontResizeCanvas) {
     _canvas->size(w(), h());
   }
   return *this;
@@ -1002,7 +1006,7 @@ void Fl_Anim_GIF_Image::set_frame(int frame_) {
     if ((last_frame >= 0 && (_fi->frames[last_frame].dispose == FrameInfo::DISPOSE_BACKGROUND ||
         _fi->frames[last_frame].dispose == FrameInfo::DISPOSE_PREVIOUS)) ||
         (_frame == 0 )) {
-      if (canvas()->parent()) {
+      if (canvas()->box() == FL_NO_BOX && canvas()->parent()) {
         canvas()->parent()->redraw();
       } else {
         canvas()->redraw();

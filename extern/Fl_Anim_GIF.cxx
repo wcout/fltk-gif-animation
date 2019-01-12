@@ -570,6 +570,7 @@ Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_, int w_, int h_,
   _stopped(false),
   _frame(-1),
   _speed(1),
+  _autoresize(false),
   _fi(new FrameInfo(this)) {
     _init(name_, start_, optimize_mem_, debug_);
 }
@@ -587,6 +588,7 @@ Fl_Anim_GIF::Fl_Anim_GIF(int x_, int y_,
   _stopped(false),
   _frame(-1),
   _speed(1),
+  _autoresize(false),
   _fi(new FrameInfo(this)) {
     _init(name_, start_, optimize_mem_, debug_);
 }
@@ -600,6 +602,7 @@ Fl_Anim_GIF::Fl_Anim_GIF() :
   _stopped(false),
   _frame(-1),
   _speed(1),
+  _autoresize(false),
   _fi(new FrameInfo(this)) {
 }
 
@@ -608,6 +611,12 @@ Fl_Anim_GIF::~Fl_Anim_GIF() {
   Fl::remove_timeout(cb_animate, this);
   delete _fi;
   free(_name);
+}
+
+
+void Fl_Anim_GIF::autoresize(bool autoresize_) {
+  _autoresize = autoresize_;
+  resize(w(), h());
 }
 
 
@@ -885,6 +894,15 @@ Fl_Anim_GIF& Fl_Anim_GIF::resize(int W_, int H_) {
 
 Fl_Anim_GIF& Fl_Anim_GIF::resize(double scale_) {
   return resize(lround((double)canvas_w() * scale_), lround((double)canvas_h() * scale_));
+}
+
+
+
+/*virtual*/
+void Fl_Anim_GIF::resize(int x_, int y_, int w_, int h_) {
+  Inherited::resize(x_, y_, w_, h_);
+  if (_autoresize)
+    resize(w_, h_);
 }
 
 
