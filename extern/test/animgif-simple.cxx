@@ -12,6 +12,7 @@ int main(int argc_, char *argv_[]) {
 
   // create/load the animated gif and start it immediately
   Fl_Anim_GIF animgif( 0, 0, win.w(), win.h(), argv_[1] );
+//  animgif.autoresize(true); // uncomment to resize image to canvas dimensions
 
   win.end();
   win.resizable(win);
@@ -19,7 +20,7 @@ int main(int argc_, char *argv_[]) {
 
   // check if loading succeeded
   printf("valid: %d frames: %d, size: %d x %d\n",
-    animgif.valid(), animgif.frames(), animgif.w(), animgif.h());
+    animgif.valid(), animgif.frames(), animgif.canvas_w(), animgif.canvas_h());
   if (animgif.valid()) {
     // print frame information
     for (int i=0; i<animgif.frames(); i++) {
