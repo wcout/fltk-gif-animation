@@ -73,6 +73,7 @@ The external solution produces these files:
 - `animgif`: The full test program
 - `animgif-resize`: A program to show live resizing animated GIF's
 - `animgif-simple`: The "hello world" version for animated GIF's
+- `animgif-demo`: A more practical demo to test the API
 
 The internal solution produces these files:
 

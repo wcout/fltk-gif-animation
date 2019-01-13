@@ -174,6 +174,7 @@ public:
    Return the name of the played file as specified in the constructor.
    */
   const char *name() const;
+  bool playing() const { return _valid && !_stopped; }
   /**
    The speed() method changes the playing speed
    to speed_ x original speed. E.g. to play at half
