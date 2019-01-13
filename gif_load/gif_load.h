@@ -48,7 +48,6 @@ extern "C" {
 #pragma pack(push, 1)
 struct GIF_WHDR {               /** ======== frame writer info: ======== **/
     int xdim, ydim, clrs,       /** global dimensions, palette size      **/
-        cres,                   /** color resolution: 2^(cres+1) = #clrs **/
         bkgd, tran,             /** background index, transparent index  **/
         intr, mode,             /** interlace flag, frame blending mode  **/
         frxd, fryd, frxo, fryo, /** current frame dimensions and offset  **/
@@ -226,7 +225,6 @@ GIF_EXTR long GIF_Load(void *data, long size,
     || ((buff[4] != 55) && (buff[4] != 57)) || (buff[5] != 97) || !gwfr)
         return 0;
 
-    whdr.cres = (ghdr->flgs >> 4) & 7;
     buff = (uint8_t*)(ghdr + 1) /** skipping the global header and palette **/
          + _GIF_LoadHeader(ghdr->flgs, 0, 0, 0, 0, 0L) * 3L;
     if ((size -= buff - (uint8_t*)ghdr) <= 0)
@@ -258,8 +256,11 @@ GIF_EXTR long GIF_Load(void *data, long size,
         if ((desc = *buff++) == GIF_FHDM) { /** found a frame **/
             whdr.intr = !!((fhdr = (struct GIF_FHDR*)buff)->flgs & 0x40);
             *(void**)&whdr.cpal = (void*)(ghdr + 1); /** interlaced? -^ **/
-            whdr.clrs = _GIF_LoadHeader(ghdr->flgs, &buff, (void**)&whdr.cpal,
-                                        fhdr->flgs, &size, sizeof(*fhdr));
+            if (!(whdr.clrs = _GIF_LoadHeader(ghdr->flgs, &buff, (void**)&whdr.cpal,
+                                        fhdr->flgs, &size, sizeof(*fhdr)))) {
+                whdr.clrs = 2 << ((ghdr->flgs >> 4) & 7); /** cresolution **/
+                whdr.cpal = 0; /** signal: no palette **/
+            }
             if ((skip <= ++whdr.ifrm) && ((whdr.clrs < 0)
             ||  (_GIF_LoadFrame(&buff, &size,
                                  whdr.bptr, whdr.bptr + blen) < 0)))

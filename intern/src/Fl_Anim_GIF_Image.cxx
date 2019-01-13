@@ -315,10 +315,9 @@ void Fl_Anim_GIF_Image::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
     memset(offscreen, 0, canvas_w * canvas_h * 4);
   }
 
-  if (!whdr_.clrs) {
-    // no colors: use default table
+  if (!whdr_.cpal) {
+    // no colors: use default table (Note: whdr_.clrs is at least 2)
     static struct GIF_WHDR::CPAL defClrs[256];
-    whdr_.clrs = 1 << (whdr_.cres + 1);
     whdr_.cpal = defClrs;
     if (warn) {
       Fl::warning("%s does not have a color table, using default.\n", _anim->name());
