@@ -22,8 +22,7 @@ fi
 if [ "$1" = "all" ]; then
 	cp -av $src/FL/*.H $fltk/FL/.
 	cp -av $src/src/*.cxx $fltk/src/.
-	cp -av $src/src/*.H $fltk/src/.
-	cp -av $src/src/*.h $fltk/src/.
+	cp -av gif_load/gif_load.h $fltk/src/.
 
 	cwd=$(pwd)
 	cd $fltk
@@ -37,5 +36,5 @@ fi
 for i in $targets
 do
 	echo "Building" $i
-	g++ -Wall -pipe -pedantic -O3 $opt -o $i `$fltkconfig --use-images --cxxflags` $src/test/$i.cxx `$fltkconfig --use-images --ldflags` -g $opt
+	g++ -I gif_load -Wall -pipe -pedantic -O3 $opt -o $i `$fltkconfig --use-images --cxxflags` $src/test/$i.cxx `$fltkconfig --use-images --ldflags` -g $opt
 done

@@ -15,5 +15,5 @@ fltkconfig=$fltk"fltk-config"
 for i in $targets
 do
 	echo "Building" $i
-	g++ -Wall -pipe -pedantic -O3 $opt -o $i `$fltkconfig --use-images --cxxflags` $src/test/$i.cxx `$fltkconfig --use-images --ldflags` -g $opt
+	g++ -I gif_load -Wall -pipe -pedantic -O3 $opt -o $i `$fltkconfig --use-images --cxxflags` $src/test/$i.cxx `$fltkconfig --use-images --ldflags` -g $opt
 done
