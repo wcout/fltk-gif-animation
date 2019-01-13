@@ -170,6 +170,16 @@ void Fl_Anim_GIF::FrameInfo::clear() {
   free(frames);
   frames = 0;
   frames_size = 0;
+
+  valid = false;
+  loop_count = 1;
+  loop = 0;
+  background_color_index = 0;
+  canvas_w = 0;
+  canvas_h = 0;
+  desaturate = false;
+  average_color = FL_BLACK;
+  average_weight = -1;
 }
 
 
@@ -925,10 +935,11 @@ void Fl_Anim_GIF::set_frame(int frame_) {
   Inherited::image(image());
   if (parent() && ((last_frame >= 0 && (_fi->frames[last_frame].dispose == FrameInfo::DISPOSE_BACKGROUND ||
      _fi->frames[last_frame].dispose == FrameInfo::DISPOSE_PREVIOUS)) ||
-     (_frame == 0 )))
+     (_frame == 0 ))) {
     parent()->redraw();
-  else
+  } else {
     redraw();
+  }
   static bool recurs = false;
   if (!recurs) {
     recurs = true;

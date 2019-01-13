@@ -218,6 +218,7 @@ protected:
   bool next_frame();
   void clear_frames();
   void set_frame(int frame_);
+  virtual void draw();
   virtual void resize(int x_, int y_, int w_, int h_);
 private:
   static void cb_animate(void *d_);
@@ -226,7 +227,6 @@ private:
   void scale_frame(int frame_ = -1);
 private:
   Fl_Anim_GIF();
-  virtual void draw();
   void onFrameLoaded(GIF_WHDR &whdr_);
   void onExtensionLoaded(GIF_WHDR &whdr_);
   void _init(const char*name_, bool start_, bool optimize_mem_, int debug_);

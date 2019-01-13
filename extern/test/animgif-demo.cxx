@@ -10,11 +10,22 @@
 #include <FL/Fl_File_Chooser.H>
 #include <cstdio>
 
+// Note: Needed only to access the
+// protected Fl_Anim_GIF::draw() method :(
+class Anim_GIF : public Fl_Anim_GIF {
+public:
+  Anim_GIF(int x_, int y_, int w_, int h_, const char *name_) :
+    Fl_Anim_GIF(x_, y_, w_, h_, name_) {}
+    void draw() {
+      Fl_Anim_GIF::draw();
+    }
+};
+
 class AnimButton : public Fl_Button {
 public:
   AnimButton(int x_, int y_, int w_, int h_, const char *gif_, const char *l_ = 0 ) :
     Fl_Button(x_, y_, w_, h_, l_) {
-    _anim = new Fl_Anim_GIF(x_, y_, 0, 0, gif_);
+    _anim = new Anim_GIF(x_, y_, 0, 0, gif_);
     fit();
   }
   void fit() {
@@ -27,6 +38,11 @@ public:
     resize(x(), y(), _anim->w(), _anim->h());
     _anim->autoresize(true);
   }
+  virtual void draw() {
+    // redraw both widgets
+    Fl_Button::draw();
+    _anim->draw();
+  }
   int orig_w() const { return _orig_w; }
   int orig_h() const { return _orig_h; }
   Fl_Anim_GIF *anim() const { return _anim; }
@@ -34,7 +50,7 @@ public:
     delete _anim;
   }
 private:
-  Fl_Anim_GIF *_anim;
+  Anim_GIF *_anim;
   int _orig_w;
   int _orig_h;
 };
@@ -60,6 +76,7 @@ static void cb_info(Fl_Widget *w_, void *d_) {
     b->anim()->load(filename);
     b->fit();
     b->copy_label(b->anim()->name());
+    b->anim()->start();
     return;
   }
   fl_message("%d x %d (original: %d x %d)\n%d frames",
