@@ -140,13 +140,13 @@ private:
 };
 
 
-#define DEBUG(x) if (debug()) printf x
-#define LOG(x) if (debug() >= 2) printf x
-#ifndef DEBUG
-  #define DEBUG(x)
-#endif
+#define LOG(x) if (debug()) printf x
+#define DEBUG(x) if (debug() >= 2) printf x
 #ifndef LOG
   #define LOG(x)
+#endif
+#ifndef DEBUG
+  #define DEBUG(x)
 #endif
 
 
@@ -576,7 +576,7 @@ Fl_Anim_GIF_Image::Fl_Anim_GIF_Image(const char *name_,
   _frame(-1),
   _speed(1),
   _fi(new FrameInfo(this)) {
-  _fi->_debug = (flags_ & Debug);
+  _fi->_debug = (flags_ & Log) + 2 * (flags_ & Debug);
   _fi->optimize_mem = (flags_ & OptimizeMemory);
   _valid = load(name_);
   if (canvas_w() && canvas_h()) {

@@ -140,13 +140,13 @@ private:
   void setToBackGround(int frame_);
 };
 
-#define DEBUG(x) if (debug()) printf x
-#define LOG(x) if (debug() >= 2) printf x
-#ifndef DEBUG
-  #define DEBUG(x)
-#endif
+#define LOG(x) if (debug()) printf x
+#define DEBUG(x) if (debug() >= 2) printf x
 #ifndef LOG
   #define LOG(x)
+#endif
+#ifndef DEBUG
+  #define DEBUG(x)
 #endif
 
 //

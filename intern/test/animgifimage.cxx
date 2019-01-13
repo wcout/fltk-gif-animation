@@ -41,7 +41,9 @@ static void cb_forced_redraw(void *d_) {
 Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
   // determine test options from 'flags_'
   bool uncache = strchr(flags_, 'u');
-  bool debug = strchr(flags_, 'd');
+  char *d = flags_ - 1;
+  int debug = 0;
+  while ((d = strchr(++d, 'd'))) debug++;
   bool optimize_mem = strchr(flags_, 'm');
   bool desaturate = strchr(flags_, 'D');
   bool average = strchr(flags_, 'A');
@@ -61,7 +63,9 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
 
   // create a canvas for the animation
   Fl_Box *canvas = test_tiles ? 0 : new Fl_Box(0, 0, 0, 0); // canvas will be resized by animation
-  unsigned short flags = debug ? Fl_Anim_GIF_Image::Debug : 0;
+  unsigned short flags = debug ? Fl_Anim_GIF_Image::Log : 0;
+  if (debug > 1)
+    flags |= Fl_Anim_GIF_Image::Debug;
   if (optimize_mem) {
     flags |= Fl_Anim_GIF_Image::OptimizeMemory;
   }
@@ -123,7 +127,7 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
     delete win;
     return 0;
   }
-  if (debug) {
+  if (debug >=3) {
     // open each frame in a separate window
     for (int i = 0; i < animgif->frames(); i++) {
       char buf[200];

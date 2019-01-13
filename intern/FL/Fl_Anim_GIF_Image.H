@@ -50,24 +50,19 @@ public:
      */
     Start = 1,
     /**
-     This flag can be used to print informations about the
-     decoding process to the console.
-     */
-    Debug = 2,
-    /**
      This flag indicates to the loader that it should not
      resize the canvas widget of the animation to the dimensions
      of the animation, which is the default.
      Needed for special use cases
      */
-    DontResizeCanvas = 4,
+    DontResizeCanvas = 2,
     /**
      This flag indicates to the loader that it should not
      set the animation as image() member of the canvas widget,
      which is the default.
      Needed for special use cases.
      */
-    DontSetAsImage = 8,
+    DontSetAsImage = 4,
     /**
      Often frames change just a small area of the animation canvas.
      This flag indicates to the loader to try using less memory,
@@ -76,7 +71,13 @@ public:
      The drawbacks are higher cpu usage during playback and maybe
      minor artefacts when resized.
      */
-    OptimizeMemory = 16
+    OptimizeMemory = 8,
+    /**
+     This flag can be used to print informations about the
+     decoding process to the console.
+     */
+    Log = 64,
+    Debug = 128
   };
   /**
    The constructor creates an new animated gif object from
