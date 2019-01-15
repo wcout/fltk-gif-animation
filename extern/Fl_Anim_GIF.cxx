@@ -476,8 +476,10 @@ void Fl_Anim_GIF::FrameInfo::scale_frame(int frame_) {
       frames[frame_].scalable->w() == new_w &&
       frames[frame_].scalable->h() == new_h)
     return;
+#if !(FL_ABI_VERSION >= 10304 && USE_SHIMAGE_SCALING)
   else if (frames[frame_].rgb->w() == new_w && frames[frame_].rgb->h() == new_h)
     return;
+#endif
 
   Fl_RGB_Scaling old_scaling = Fl_Image::RGB_scaling(); // save current scaling method
   Fl_Image::RGB_scaling(scaling);

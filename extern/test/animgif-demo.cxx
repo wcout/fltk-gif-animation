@@ -31,12 +31,10 @@ public:
   void fit() {
     _orig_w = _anim->canvas_w();
     _orig_h = _anim->canvas_h();
-    if (_anim->w() > w()) {
-      int prop = h() / w();
-      _anim->resize(w(), h() * prop);
-    }
-    resize(x(), y(), _anim->w(), _anim->h());
+    double prop = (double)_orig_h / (double)_orig_w;
+    _anim->resize(w(), w() * prop);
     _anim->autoresize(true);
+    resize(x(), y(), _anim->canvas_w(), _anim->canvas_h());
   }
   virtual void draw() {
     // redraw both widgets
@@ -90,7 +88,7 @@ int main(int argc_, char *argv_[]) {
 
   Fl_Double_Window win(300, 300, "animation demo");
 
-  AnimButton but1( 20, 10, 200, 50, "testsuite/filecopy.gif");
+  AnimButton but1( 20, 10, 260, 50, "testsuite/filecopy.gif");
   but1.callback(cb_start_stop);
   but1.do_callback();
 
@@ -98,6 +96,7 @@ int main(int argc_, char *argv_[]) {
   but2.align(FL_ALIGN_BOTTOM);
   but2.copy_label(but2.anim()->name());
   but2.callback(cb_info);
+  but2.anim()->copy_tooltip("left click: show info\nright click: load image");
 
   win.resizable(win);
   win.end();
