@@ -14,7 +14,7 @@ the interface to FLTK.
 ## Solution 1: External FLTK-Widget
 
 My first solution was an external Widget `Fl_Anim_GIF`, derived from the basic FLTK widget `Fl_Box`.
-This solution works well and can be found in the folder `extern`<del> 
+This solution works well and can be found in the folder `extern`.
 
 But Kleine Bre's design approach to expand the `Fl_GIF_Image` class with animation capabilties
 seems advantegeous. But I did not want to have `Fl_GIF_Image` load animated files
