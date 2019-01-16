@@ -191,6 +191,7 @@ int main(int argc_, char *argv_[]) {
     int W = win.w() - 40;
     int H = (double)W / ratio;
     printf("original size: %d x %d\n", orig->w(), orig->h());
+    orig->size(W, H); // resize animation to fit in window
     win.size(W, H);
 
     Fl::add_handler(global_shortcut);
