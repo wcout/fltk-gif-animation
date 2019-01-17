@@ -101,6 +101,7 @@ int main(int argc_, char *argv_[]) {
   // (we want to show it in the center of the window)
   Canvas canvas(0, 0, win.w(), win.h());
   win.resizable(win);
+  win.size_range(1, 1);
 
   win.end();
   win.show();

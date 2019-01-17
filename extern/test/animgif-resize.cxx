@@ -145,6 +145,7 @@ int main(int argc_, char *argv_[]) {
   // prepare a container for the animation
   Canvas canvas(0, 0, win.w(), win.h());
   win.resizable(win);
+  win.size_range(1, 1);
 
   win.end();
   win.show();
