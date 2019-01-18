@@ -560,7 +560,8 @@ void Fl_Anim_GIF::_init(const char*name_, bool start_,
                         bool optimize_mem_, int debug_) {
   _fi->_debug = debug_;
   _fi->optimize_mem = optimize_mem_;
-  _valid = load(name_);
+  if (name_)
+    _valid = load(name_);
   if (canvas_w() && canvas_h()) {
     if (w() <= 0 && h() <= 0)
       size(canvas_w(), canvas_h());
