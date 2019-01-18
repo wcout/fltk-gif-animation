@@ -215,6 +215,7 @@ void Fl_Anim_GIF_Image::FrameInfo::copy(const FrameInfo& fi_) {
     }
     // just copy data 1:1 now - scaling will be done adhoc when frame is displayed
     frames[i].rgb = (Fl_RGB_Image *)fi_.frames[i].rgb->copy();
+    frames[i].scalable = 0;
   }
   optimize_mem = fi_.optimize_mem;
   scaling = Fl_Image::RGB_scaling(); // save current scaling mode
@@ -669,7 +670,7 @@ void Fl_Anim_GIF_Image::color_average(Fl_Color c_, float i_) {
 
 
 /*virtual*/
-Fl_Image * Fl_Anim_GIF_Image::copy(int W_, int H_) {
+Fl_Image *Fl_Anim_GIF_Image::copy(int W_, int H_) {
   Fl_Anim_GIF_Image *copied = new Fl_Anim_GIF_Image();
   // copy/resize the base image (Fl_Pixmap)
   // Note: this is not really necessary, if the draw()

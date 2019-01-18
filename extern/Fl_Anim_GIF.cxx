@@ -224,6 +224,7 @@ void Fl_Anim_GIF::FrameInfo::copy(const FrameInfo& fi_) {
     }
     // just copy data 1:1 now - scaling will be done adhoc when frame is displayed
     frames[i].rgb = (Fl_RGB_Image *)fi_.frames[i].rgb->copy();
+    frames[i].scalable = 0;
   }
   optimize_mem = fi_.optimize_mem;
   scaling = Fl_Image::RGB_scaling(); // save current scaling mode
@@ -659,10 +660,14 @@ void Fl_Anim_GIF::color_average(Fl_Color c_, float i_) {
   _fi->average_weight = i_;
 }
 
+/*virtual*/
+Fl_Anim_GIF * Fl_Anim_GIF::copy() {
+  return copy(canvas_w(), canvas_h());
+}
 
 /*virtual*/
 Fl_Anim_GIF * Fl_Anim_GIF::copy(int W_, int H_) {
-  Fl_Anim_GIF *copied = new Fl_Anim_GIF();
+  Fl_Anim_GIF *copied = new Fl_Anim_GIF(x(), y());
   // copy/resize the animated gif frames (Fl_RGB_Image array)
   copied->w(W_);
   copied->h(H_);

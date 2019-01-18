@@ -88,6 +88,7 @@ public:
    and resizes all of its frame images to W x H using
    the current resize method.
    */
+  virtual Fl_Anim_GIF *copy();
   virtual Fl_Anim_GIF *copy(int W_, int H_);
   /**
    The debug() method returns if the class has
@@ -214,12 +215,17 @@ public:
    one frame.
    */
   bool valid() const;
+public:
+  /**
+   draw() and resize() are public, in order to allow
+   composition.
+  */
+  virtual void draw();
+  virtual void resize(int x_, int y_, int w_, int h_);
 protected:
   bool next_frame();
   void clear_frames();
   void set_frame(int frame_);
-  virtual void draw();
-  virtual void resize(int x_, int y_, int w_, int h_);
 private:
   static void cb_animate(void *d_);
   static void cb_gl_frame(void *ctx_, GIF_WHDR *whdr_);
