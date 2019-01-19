@@ -100,6 +100,8 @@ int main(int argc_, char *argv_[]) {
   fl_register_images();
 
   Fl_Double_Window win(300, 300, "animation demo");
+  Fl_Anim_GIF bg(0, 0, win.w(), win.h(), "testsuite/worm.gif");
+  bg.autoresize(true);
 
   Fl_Anim_Button but1(20, 10, 260, 50, "testsuite/filecopy.gif");
   but1.callback(cb_start_stop);

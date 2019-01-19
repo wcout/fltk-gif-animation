@@ -1,5 +1,5 @@
 //
-//  Mininal program for displaying an animated GIF file
+//  Minimal program for displaying an animated GIF file
 //  with the Fl_Anim_GIF class.
 //
 #include "../Fl_Anim_GIF.cxx"
