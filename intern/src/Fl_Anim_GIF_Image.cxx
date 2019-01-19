@@ -623,7 +623,10 @@ void Fl_Anim_GIF_Image::canvas(Fl_Widget *canvas_, unsigned short flags_/* = 0*/
     _canvas->image(this); // set animation as image() of canvas
   if (_canvas && !(flags_ & DontResizeCanvas))
     _canvas->size(w(), h());
-
+  if (_flags != flags_) {
+    _flags = flags_;
+    _fi->_debug = (flags_ & Log) + 2 * (flags_ & Debug);
+  }
   // Note: 'Start' flag is *NOT* used here,
   //       but an already running animation is restarted.
   _frame = -1;
@@ -883,6 +886,8 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
     Inherited::data(tmp.data(), tmp.count());
     alloc_data = tmp.alloc_data;
     tmp.alloc_data = 0;
+    w(tmp.w());
+    h(tmp.h());
   }
 
   // read gif file into memory
@@ -912,12 +917,13 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   _fi->load(buf, len);
   free(buf);
   _frame = _fi->frames_size - 1;
+  _valid = _fi->valid;
 
-  if (!_fi->valid) {
+  if (!_valid) {
     Fl::error("Fl_Anim_GIF: %s has invalid format.\n", name_);
     ld(ERR_FORMAT);
   }
-  return _fi->valid;
+  return _valid;
 } // load
 
 
@@ -951,21 +957,6 @@ bool Fl_Anim_GIF_Image::next_frame() {
     Fl::add_timeout(delay, cb_animate, this);
   }
   return true;
-}
-
-
-double Fl_Anim_GIF_Image::speed() const {
-  return _speed;
-}
-
-
-void Fl_Anim_GIF_Image::speed(double speed_) {
-  _speed = speed_;
-}
-
-
-bool Fl_Anim_GIF_Image::valid() const {
-  return _valid;
 }
 
 
@@ -1028,6 +1019,16 @@ void Fl_Anim_GIF_Image::set_frame(int frame_) {
 }
 
 
+double Fl_Anim_GIF_Image::speed() const {
+  return _speed;
+}
+
+
+void Fl_Anim_GIF_Image::speed(double speed_) {
+  _speed = speed_;
+}
+
+
 bool Fl_Anim_GIF_Image::start() {
   Fl::remove_timeout(cb_animate, this);
   if (_fi->frames_size) {
@@ -1049,4 +1050,9 @@ void Fl_Anim_GIF_Image::uncache() {
   for (int i=0; i < _fi->frames_size; i++) {
     if (_fi->frames[i].rgb) _fi->frames[i].rgb->uncache();
   }
+}
+
+
+bool Fl_Anim_GIF_Image::valid() const {
+  return _valid;
 }

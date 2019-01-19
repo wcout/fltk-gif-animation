@@ -864,11 +864,12 @@ bool Fl_Anim_GIF::load(const char *name_) {
   _fi->load(buf, len);
   free(buf);
   _frame = _fi->frames_size - 1;
+  _valid = _fi->valid;
 
-  if (!_fi->valid) {
+  if (!_valid) {
     Fl::error("Fl_Anim_GIF: %s has invalid format.\n", name_);
   }
-  return _fi->valid;
+  return _valid;
 } // load
 
 const char *Fl_Anim_GIF::name() const {

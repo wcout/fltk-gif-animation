@@ -211,7 +211,9 @@ int main(int argc_, char *argv_[]) {
 
   // use the 'DontResizeCanvas' flag to tell the animation
   // not to change the canvas size (which is the default).
-  animgif.canvas(&canvas, Fl_Anim_GIF_Image::DontResizeCanvas);
+  unsigned short flags = Fl_Anim_GIF_Image::DontResizeCanvas;
+//  flags |= Fl_Anim_GIF_Image::Debug|Fl_Anim_GIF_Image::Log;
+  animgif.canvas(&canvas, flags);
 
   load_next();
   return Fl::run();
