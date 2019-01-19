@@ -3,7 +3,7 @@
 # put the path to your FLTK repository here
 fltk=../fltk
 
-targets="animgifimage animgifimage-simple animgifimage-resize animgifimage-play"
+targets="animgifimage animgifimage-simple animgifimage-resize animgifimage-play buttons pixmap"
 src=intern
 #opt=-pg
 
