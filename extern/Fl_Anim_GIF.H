@@ -61,7 +61,7 @@ public:
    */
   ~Fl_Anim_GIF();
   /**
-   The autoresize flag sets the behavoir, when the underlying Fl_Box widget is resized
+   The autoresize flag sets the behaviour, when the underlying Fl_Box widget is resized
    by FLTK (e.g. when the window is resizable and is resized by the user). If the value
    is on, the image is auto-resized according the new Fl_Box dimensions.
    The default is off i.e. the image keeps it's dimensions.
