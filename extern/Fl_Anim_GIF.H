@@ -88,7 +88,7 @@ public:
    and resizes all of its frame images to W x H using
    the current resize method.
    */
-  virtual Fl_Anim_GIF *copy();
+  Fl_Anim_GIF *copy();
   virtual Fl_Anim_GIF *copy(int W_, int H_);
   /**
    The debug() method returns if the class has

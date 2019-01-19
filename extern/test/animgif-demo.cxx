@@ -86,20 +86,37 @@ static void cb_info(Fl_Widget *w_, void *d_) {
   b->anim()->start(); // start again
 }
 
+static void cb_lighter(Fl_Widget *w_, void *d_) {
+  Fl_Anim_GIF *ag = ((Fl_Anim_Button *)d_)->anim();
+  ag->color_average(FL_WHITE, -0.9);
+}
+
+static void cb_darker(Fl_Widget *w_, void *d_) {
+  Fl_Anim_GIF *ag = ((Fl_Anim_Button *)d_)->anim();
+  ag->color_average(FL_BLACK, -0.9);
+}
+
 int main(int argc_, char *argv_[]) {
   fl_register_images();
 
   Fl_Double_Window win(300, 300, "animation demo");
 
-  Fl_Anim_Button but1( 20, 10, 260, 50, "testsuite/filecopy.gif");
+  Fl_Anim_Button but1(20, 10, 260, 50, "testsuite/filecopy.gif");
   but1.callback(cb_start_stop);
   but1.do_callback();
 
-  Fl_Anim_Button but2( 100, 100, 100, 100, "testsuite/banana.gif" );
+  Fl_Anim_Button but2(100, 100, 100, 100, "testsuite/banana.gif" );
   but2.align(FL_ALIGN_BOTTOM);
   but2.copy_label(but2.anim()->name());
   but2.callback(cb_info);
   but2.anim()->copy_tooltip("left click: show info\nright click: load image");
+
+  Fl_Button lighter(60,130,40,40,"@8>");
+  lighter.callback(cb_lighter, &but2);
+  lighter.copy_tooltip("lighter");
+  Fl_Button darker(200,130,40,40,"@2>");
+  darker.callback(cb_darker, &but2);
+  darker.copy_tooltip("darker");
 
   win.resizable(win);
   win.end();

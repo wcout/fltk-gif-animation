@@ -657,11 +657,18 @@ void Fl_Anim_GIF::cb_animate(void *d_) {
 
 /*virtual*/
 void Fl_Anim_GIF::color_average(Fl_Color c_, float i_) {
+  if (i_ < 0) {
+    // immediate mode
+    i_ = -i_;
+    for (int f=0; f < frames(); f++) {
+      _fi->frames[f].rgb->color_average(c_, i_);
+    }
+    return;
+  }
   _fi->average_color = c_;
   _fi->average_weight = i_;
 }
 
-/*virtual*/
 Fl_Anim_GIF * Fl_Anim_GIF::copy() {
   return copy(canvas_w(), canvas_h());
 }
