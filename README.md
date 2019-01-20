@@ -102,8 +102,12 @@ use the class.
 
 Test the resizing programs to get an impression about speed and memory consumption.
 
-Have a look at the [API](https://wcout.github.io/animgif/html/class_fl___anim___g_i_f___image.html).
-**[Note: This is currently not up to date, but sufficient to get a general impression]**
+### Have a look at the API:
+
+[API of Internal widget `Fl_Anim_GIF_Image`](https://wcout.github.io/animgifimage/animgifimage.html)
+
+
+[API of External widget `Fl_Anim_GIF`](https://wcout.github.io/animgif/animgif.html)
 
 ## Resume
 
