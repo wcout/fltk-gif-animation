@@ -11,7 +11,7 @@ int main(int argc_, char *argv_[]) {
   Fl_Double_Window win(800, 600, "animated");
 
   // create/load the animated gif and start it immediately
-  Fl_Anim_GIF animgif( 0, 0, win.w(), win.h(), argv_[1] );
+  Fl_Anim_GIF animgif(0, 0, win.w(), win.h(), argv_[1]);
 //  animgif.autoresize(true); // uncomment to resize image to canvas dimensions
 
   win.end();

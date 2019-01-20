@@ -299,7 +299,7 @@ void Fl_Anim_GIF_Image::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
   static bool warn = false;
   if (whdr_.ifrm && !valid) return; // if already invalid, just ignore rest
   int delay = whdr_.time;
-  if ( delay < 0 )
+  if (delay < 0)
     delay = -(delay + 1);
 
   LOG(("onFrameLoaded: frame #%d/%d, %dx%d, delay: %d, intr=%d, bkgd=%d/%d, dispose=%d\n",
@@ -546,8 +546,8 @@ static char *readin(const char *name_, long &sz_) {
   if (s.st_mode & 0x4000/*_SIFDIR*/) { errno = EISDIR; return buf; };
   sz_ = s.st_size;
   FILE *gif = fopen(name_, "r");
-  if (!(gif                                 &&
-       (buf = (char *)malloc( (size_t)sz_)) &&
+  if (!(gif                                &&
+       (buf = (char *)malloc((size_t)sz_)) &&
        fread(buf, 1, (size_t)sz_, gif) == (size_t)sz_)) {
     free(buf);
     buf = 0;
@@ -1006,7 +1006,7 @@ void Fl_Anim_GIF_Image::set_frame(int frame_) {
   if (canvas()) {
     if ((last_frame >= 0 && (_fi->frames[last_frame].dispose == FrameInfo::DISPOSE_BACKGROUND ||
         _fi->frames[last_frame].dispose == FrameInfo::DISPOSE_PREVIOUS)) ||
-        (_frame == 0 )) {
+        (_frame == 0)) {
       if (canvas()->box() == FL_NO_BOX && canvas()->parent()) {
         canvas()->parent()->redraw();
       } else {

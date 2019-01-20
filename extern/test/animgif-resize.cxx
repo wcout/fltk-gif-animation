@@ -18,7 +18,7 @@ static void dump_shared_images()
   int numImages = Fl_Shared_Image::num_images();
   Fl_Shared_Image **images = Fl_Shared_Image::images();
   printf("Shared images: %d\n", numImages);
-  for ( int i = 0; i < numImages; i++)
+  for (int i = 0; i < numImages; i++)
   {
     printf("%02u [%d] '%s' %d x %d\n", i+1, images[i]->refcount(),
            images[i]->name(), images[i]->w(), images[i]->h());
@@ -72,7 +72,7 @@ public:
       animgif->stop();
       remove(0);
       // delete already copied images
-      if (animgif != orig ) {
+      if (animgif != orig) {
         delete animgif;
       }
       Fl_Anim_GIF *copied = orig->copy(W_, H_);
