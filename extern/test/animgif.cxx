@@ -85,9 +85,10 @@ static Fl_Window *openFile(const char *name_, bool optimize_mem_, int debug_, bo
   win->color(BACKGROUND);
   if (close_)
     win->callback(quit_cb);
-  printf("Loading '%s'\n", name_);
+  printf("Loading '%s' ... ", name_);
   Fl_Anim_GIF *animgif = new Fl_Anim_GIF(0, 0, 0, 0, name_, /*start_=*/false, optimize_mem_, debug_);
   win->end();
+  printf("%s\n", animgif->valid() ? "OK" : "ERROR");
   char buf[200];
   if (animgif->valid() && animgif->frames()) {
     if (CopyTest) {
