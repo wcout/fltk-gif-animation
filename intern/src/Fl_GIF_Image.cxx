@@ -227,7 +227,6 @@ Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0) {
     ColorMapSize = 1 << BitsPerPixel;
     Red[0] = Green[0] = Blue[0] = 0;	// black
     Red[1] = Green[1] = Blue[1] = 255;	// white
-    printf("%s: ColorMapSize: %d, CodeSize: %d, BitsPerPixel: %d\n", infname, ColorMapSize, CodeSize, BitsPerPixel);
     for (int i = 2; i < ColorMapSize; i++) {
       Red[i] = Green[i] = Blue[i] = (uchar)(255 * i / (ColorMapSize - 1));
     }
