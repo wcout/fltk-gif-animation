@@ -30,6 +30,8 @@ if [ "$1" = "all" ]; then
 	touch FL/Fl_Anim_GIF_Image.H
 	make
 	cd $cwd
+else
+	echo "Building only the test programs - use '$0 all' to compile FLTK widget"
 fi
 
 # build the testprogram
