@@ -34,19 +34,18 @@ static void quit_cb(Fl_Widget* w_, void*) {
 static void callback(Fl_Widget *o_, void *d_) {
   // this is called each time the frame image changes (to the next frame)
   Fl_Anim_GIF *animgif = (Fl_Anim_GIF *)o_;
-  printf( "'%s': displaying frame %d/%d, delay %fs\n",
+  printf("'%s': displaying frame %d/%d, delay %fs\n",
     animgif->label(),
     animgif->frame()+1, animgif->frames(), animgif->delay(animgif->frame()));
   // stop animation after one complete pass
   if (animgif->frame()+1 == animgif->frames())
   {
     animgif->stop();
-    printf( "'%s': stopped after one pass\n", animgif->label());
+    printf("'%s': stopped after one pass\n", animgif->label());
   }
 }
 
-static int global_key_handler(int e_)
-{
+static int global_key_handler(int e_) {
   // intercept keys '+' and '-'
   if (e_ != FL_SHORTCUT)
     return 0;

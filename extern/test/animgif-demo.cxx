@@ -107,7 +107,7 @@ int main(int argc_, char *argv_[]) {
   but1.callback(cb_start_stop);
   but1.do_callback();
 
-  Fl_Anim_Button but2(100, 100, 100, 100, "testsuite/banana.gif" );
+  Fl_Anim_Button but2(100, 100, 100, 100, "testsuite/banana.gif");
   but2.align(FL_ALIGN_BOTTOM);
   but2.copy_label(but2.anim()->name());
   but2.callback(cb_info);

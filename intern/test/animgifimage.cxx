@@ -71,7 +71,7 @@ Fl_Window *openFile(const char *name_, char *flags_, bool close_ = false) {
   }
   // create animation, specifying this canvas as display widget
   Fl_Anim_GIF_Image *animgif = new Fl_Anim_GIF_Image(name_, canvas, flags);
-  printf("%s\n", animgif->valid() ? "OK" : "ERROR" );
+  printf("%s\n", animgif->valid() ? "OK" : "ERROR");
   win->user_data(animgif); // store address of image (see note in main())
 
   // exercise the optional tests on the animation
