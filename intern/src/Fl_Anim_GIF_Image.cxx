@@ -1004,17 +1004,11 @@ void Fl_Anim_GIF_Image::set_frame(int frame_) {
   _fi->set_frame(_frame);
 
   if (canvas()) {
-    if ((last_frame >= 0 && (_fi->frames[last_frame].dispose == FrameInfo::DISPOSE_BACKGROUND ||
-        _fi->frames[last_frame].dispose == FrameInfo::DISPOSE_PREVIOUS)) ||
-        (_frame == 0)) {
-      if (canvas()->box() == FL_NO_BOX && canvas()->parent()) {
-        canvas()->parent()->redraw();
-      } else {
-        canvas()->redraw();
-      }
-    } else {
-      canvas()->redraw();
-    }
+    canvas()->parent() &&
+      (_frame == 0 || (last_frame >= 0 && (_fi->frames[last_frame].dispose == FrameInfo::DISPOSE_BACKGROUND  ||
+                                           _fi->frames[last_frame].dispose == FrameInfo::DISPOSE_PREVIOUS))) &&
+        (canvas()->box() == FL_NO_BOX || (canvas()->align() && !(canvas()->align() & FL_ALIGN_INSIDE)))      ?
+      canvas()->parent()->redraw() : canvas()->redraw();
   }
 }
 
