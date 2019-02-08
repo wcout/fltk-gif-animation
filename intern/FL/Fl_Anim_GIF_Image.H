@@ -77,6 +77,10 @@ public:
      decoding process to the console.
      */
     Log = 64,
+    /**
+     This flag can be used to print even more informations about
+     the decoding process to the console.
+     */
     Debug = 128
   };
   /**
