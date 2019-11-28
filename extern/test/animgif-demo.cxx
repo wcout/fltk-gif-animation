@@ -122,7 +122,7 @@ int main(int argc_, char *argv_[]) {
 
   win.resizable(win);
   win.end();
-  win.show();
+  win.show(argc_, argv_);
 
   return Fl::run();
 }
