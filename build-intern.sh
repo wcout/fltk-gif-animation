@@ -22,6 +22,9 @@ fi
 if [ "$1" = "all" ]; then
 	cp -av $src/FL/*.H $fltk/FL/.
 	cp -av $src/src/*.cxx $fltk/src/.
+# uncomment for newer FLTK version using image reader class
+#	cp -av $src/FL/v2/*.H $fltk/FL/.
+#	cp -av $src/src/v2/*.cxx $fltk/src/.
 	cp -av gif_load/gif_load.h $fltk/src/.
 
 	cwd=$(pwd)
