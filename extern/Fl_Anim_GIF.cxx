@@ -820,7 +820,7 @@ static char *readin(const char *name_, long &sz_) {
   if (fl_stat(name_, &s)) return buf;
   if (s.st_mode & 0x4000/*_SIFDIR*/) { errno = EISDIR; return buf; };
   sz_ = s.st_size;
-  FILE *gif = fopen(name_, "r");
+  FILE *gif = fopen(name_, "rb");
   if (!(gif                                &&
        (buf = (char *)malloc((size_t)sz_)) &&
        fread(buf, 1, (size_t)sz_, gif) == (size_t)sz_)) {
