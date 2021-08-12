@@ -910,7 +910,7 @@ bool Fl_Anim_GIF_Image::load(const char *name_) {
   }
   if (buf[3]!='8' || buf[4] >'9' || buf[5] != 'a') {
     Fl::warning("%s is version %c%c%c.", name_, buf[3], buf [4], buf[5]);
-    strncpy(&buf[3], "89a", 3); // make gif_load happy
+    memcpy(&buf[3], "89a", 3); // make gif_load happy
   }
 
   // decode GIF using gif_load.h
