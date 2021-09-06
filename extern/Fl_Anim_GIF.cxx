@@ -77,7 +77,7 @@ friend class Fl_Anim_GIF;
     Fl_Color average_color;           // last average color
     float average_weight;             // last average weight
     bool desaturated;                 // flag if frame is desaturated
-    int x, y, w, h;                   // frame original dimensions
+    unsigned short x, y, w, h;        // frame original dimensions
     double delay;                     // delay (already converted to ms)
     Dispose dispose;                  // disposal method
     int transparent_color_index;      // needed for dispose()
@@ -271,8 +271,20 @@ void Fl_Anim_GIF::FrameInfo::dispose(int frame_) {
         DEBUG(("  dispose frame %d to previous frame %d\n", frame_ + 1, prev + 1));
         // copy the previous image data..
         uchar *dst = offscreen;
+        int px = frames[prev].x;
+        int py = frames[prev].y;
+        int pw = frames[prev].w;
+        int ph = frames[prev].h;
         const char *src = frames[prev].rgb->data()[0];
-        memcpy((char *)dst, (char *)src, canvas_w * canvas_h * 4);
+        if (px == 0 && py == 0 && pw == canvas_w && ph == canvas_h)
+          memcpy((char *)dst, (char *)src, canvas_w * canvas_h * 4);
+        else {
+          if ( px + pw > canvas_w ) pw = canvas_w - px;
+          if ( py + ph > canvas_h ) ph = canvas_h - py;
+          for (int y = 0; y < ph; y++) {
+            memcpy(dst + ( y + py ) * canvas_w * 4 + px, src + y * frames[prev].w * 4, pw * 4);
+          }
+        }
         break;
       }
     case FrameInfo::DISPOSE_BACKGROUND:
