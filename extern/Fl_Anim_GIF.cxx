@@ -136,7 +136,7 @@ private:
 private:
   void dispose(int frame_);
   void onFrameLoaded(GIF_WHDR &whdr_);
-  void onExtensionLoaded(GIF_WHDR &whdr_);
+  void onExtensionLoaded(const GIF_WHDR &whdr_);
   void setToBackGround(int frame_);
 };
 
@@ -232,7 +232,7 @@ void Fl_Anim_GIF::FrameInfo::copy(const FrameInfo& fi_) {
 }
 
 
-static void deinterlace(GIF_WHDR &whdr_) {
+static void deinterlace(const GIF_WHDR &whdr_) {
   if (!whdr_.intr) return;
   // this code is from 'gif_load's example program (with adaptions)
   int iter = 0;
@@ -312,6 +312,7 @@ bool Fl_Anim_GIF::FrameInfo::load(char *buf_, long len_) {
 
 
 void Fl_Anim_GIF::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
+  printf("onFrameLoaded valid=%d\n", valid);
   static bool warn = false;
   if (whdr_.ifrm && !valid) return; // if already invalid, just ignore rest
   int delay = whdr_.time;
@@ -441,7 +442,7 @@ void Fl_Anim_GIF::FrameInfo::onFrameLoaded(GIF_WHDR &whdr_) {
 }
 
 
-void Fl_Anim_GIF::FrameInfo::onExtensionLoaded(GIF_WHDR &whdr_) {
+void Fl_Anim_GIF::FrameInfo::onExtensionLoaded(const GIF_WHDR &whdr_) {
   uchar *ext = whdr_.bptr;
   if (memcmp(ext, "NETSCAPE2.0", 11) == 0 && ext[11] >= 3) {
     uchar *params = &ext[12];
