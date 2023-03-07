@@ -25,6 +25,8 @@ have a different transparent color index.
 
 ## Solution 2: Replacement widget for current GIF class
 
+
+
 So I came up with the idea to derive a class `Fl_Anim_GIF_Image` from `Fl_GIF_Image` that
 stores its images directly in RGB-format without an intermittent `XPM`.
 
@@ -57,6 +59,15 @@ Both solutions offer roughly the same functionality:
 - it also possible to run several instances of the _same_ animation simultaneously
   and to use it as tiles in `Fl_Tiled_Image` (internal solution only).
 - application controlled playback possible
+
+## Current status as of 2023/02/19
+
+Solution 2 (new FLTK Fl_Anim_GIF_Image class) has been incorporated into the
+official FLTK 1.4 source tree as of 2023/01/21 (#2ddfd9d)
+
+This project will not be developed further.
+
+It can still be useful as reference how to build an 'external' Widget as in Solution 1.
 
 ## Building
 
