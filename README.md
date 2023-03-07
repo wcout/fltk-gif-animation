@@ -62,8 +62,8 @@ Both solutions offer roughly the same functionality:
 
 ## Current status as of 2023/02/19
 
-Solution 2 (new FLTK Fl_Anim_GIF_Image class) has been incorporated into the
-official FLTK 1.4 source tree as of 2023/01/21 (#2ddfd9d)
+Solution 2 (new FLTK `Fl_Anim_GIF_Image` class) has been incorporated into the
+official FLTK 1.4 source tree as of 2023/01/21 [#2ddfd9d](https://github.com/fltk/fltk/commit/2ddfd9d)
 
 This project will not be developed further.
 
